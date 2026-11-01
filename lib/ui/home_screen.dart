@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../game/settings.dart';
 import 'board_view.dart' show kPlayerColors;
 import 'game_screen.dart';
+import 'remote_screen.dart';
 
 /// Entry screen: choose a game mode, or open Options to configure the King icon.
 class HomeScreen extends StatelessWidget {
@@ -60,11 +61,14 @@ class HomeScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 12),
                         OutlinedButton.icon(
-                          onPressed: null, // remote mode: PLAN.md §5, not built
+                          onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                                builder: (_) => const RemoteLobbyScreen()),
+                          ),
                           icon: const Icon(Icons.link),
                           label: const Padding(
                             padding: EdgeInsets.symmetric(vertical: 14),
-                            child: Text('Play by Link (coming soon)'),
+                            child: Text('Play by Link'),
                           ),
                         ),
                         const SizedBox(height: 24),

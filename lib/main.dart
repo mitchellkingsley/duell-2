@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 
+import 'game/match_store.dart';
 import 'game/settings.dart';
 import 'ui/home_screen.dart';
+import 'ui/remote_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Settings.instance.load();
+  await MatchStore.instance.init();
   runApp(const DuellApp());
 }
 
@@ -14,6 +17,8 @@ class DuellApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // If the app was opened via a turn link (?t=...), go straight into it.
+    final inboundToken = Uri.base.queryParameters['t'];
     final base = ThemeData(
       brightness: Brightness.dark,
       colorSchemeSeed: const Color(0xFF4A90D9),
@@ -27,7 +32,9 @@ class DuellApp extends StatelessWidget {
       themeMode: ThemeMode.dark,
       // JetBrains Mono is a variable font; nudge the default weight heavier.
       darkTheme: base.copyWith(textTheme: _heavier(base.textTheme)),
-      home: const HomeScreen(),
+      home: (inboundToken != null && inboundToken.isNotEmpty)
+          ? InboundLauncher(token: inboundToken)
+          : const HomeScreen(),
     );
   }
 

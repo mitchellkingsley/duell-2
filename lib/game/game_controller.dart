@@ -5,7 +5,19 @@ import '../core/die.dart';
 import '../core/geometry.dart';
 import '../core/move.dart';
 import '../core/rules.dart';
+import '../core/serialization.dart';
 import '../core/setup.dart';
+import '../core/turn_link.dart';
+import 'match_store.dart';
+
+/// Outcome of applying an inbound turn link.
+enum InboundResult {
+  applied,
+  duplicate, // already applied (seq <= ours) — harmless
+  wrongGame, // link is for a different game
+  illegal, // the move is not legal from our state
+  desync, // out of sequence, or resulting hash disagrees
+}
 
 /// A move currently being animated (the die tumbling from origin to
 /// destination). Captured at commit time so the overlay has the pre-move
@@ -33,8 +45,41 @@ class GameController extends ChangeNotifier {
     newGame();
   }
 
+  /// A link-based (remote) game. [myPlayer] is the only side this device may
+  /// move; moves commit, bump the sequence, and produce an outbound link.
+  GameController.remote({
+    required String gameId,
+    required int myPlayer,
+    required GameState state,
+    required int seq,
+  }) {
+    _gameId = gameId;
+    _myPlayer = myPlayer;
+    _seq = seq;
+    _state = state;
+  }
+
   late GameState _state;
   GameState get state => _state;
+
+  // --- Remote (link-based) mode ---
+  int? _myPlayer;
+  int? get myPlayer => _myPlayer;
+  bool get isRemote => _myPlayer != null;
+
+  String? _gameId;
+  String? get gameId => _gameId;
+
+  int _seq = 0;
+  int get seq => _seq;
+
+  /// The encoded turn token to share after this device's move (null until you
+  /// move, or once the opponent's reply has been applied).
+  String? _outboundToken;
+  String? get outboundToken => _outboundToken;
+
+  bool get isMyTurn =>
+      !isRemote || (!_state.isOver && _state.currentPlayer == _myPlayer);
 
   Position? _selected;
   Position? get selected => _selected;
@@ -96,7 +141,8 @@ class GameController extends ChangeNotifier {
     return piece != null &&
         piece.owner == _state.currentPlayer &&
         !_state.isOver &&
-        !isAnimating;
+        !isAnimating &&
+        isMyTurn;
   }
 
   void select(Position p) {
@@ -185,7 +231,64 @@ class GameController extends ChangeNotifier {
     _lastMove = move;
     _clearSelection();
     _animating = anim;
+
+    if (isRemote) {
+      _seq += 1;
+      _outboundToken = TurnPayload(
+        gameId: _gameId!,
+        seq: _seq,
+        from: move.from,
+        path: move.path,
+        stateHash: stateHash(_state),
+      ).encode();
+      _persist();
+    }
+
     notifyListeners();
+  }
+
+  /// Apply a turn received over a link. Returns the outcome; on success the
+  /// opponent's move tumbles across the board and it becomes your turn.
+  InboundResult applyInbound(TurnPayload p) {
+    if (!isRemote || _gameId == null || p.gameId != _gameId) {
+      return InboundResult.wrongGame;
+    }
+    if (p.seq <= _seq) return InboundResult.duplicate;
+    if (p.seq != _seq + 1) return InboundResult.desync;
+
+    final resolved = Rules.resolveMove(_state, p.from, p.path);
+    if (resolved == null) return InboundResult.illegal;
+
+    final piece = _state.pieceAt(p.from)!;
+    final next = Rules.applyMove(_state, resolved);
+    if (stateHash(next) != p.stateHash) return InboundResult.desync;
+
+    _state = next;
+    _seq = p.seq;
+    _lastMove = resolved;
+    _outboundToken = null;
+    _clearSelection();
+    _animating = TumbleAnim(
+      move: resolved,
+      startDie: piece.die,
+      owner: piece.owner,
+      isKing: piece.isKing,
+    );
+    _persist();
+    notifyListeners();
+    return InboundResult.applied;
+  }
+
+  void _persist() {
+    if (!isRemote) return;
+    // Fire-and-forget; the device's copy of the match survives app restarts.
+    MatchStore.instance.save(SavedMatch(
+      gameId: _gameId!,
+      state: _state,
+      seq: _seq,
+      myPlayer: _myPlayer!,
+      updatedAt: DateTime.now(),
+    ));
   }
 
   /// Called by the board when the tumble animation finishes: reveal the settled

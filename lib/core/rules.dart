@@ -117,6 +117,26 @@ class Rules {
     return resolved.to == move.to && resolved.resultDie == move.resultDie;
   }
 
+  /// Resolve a path (origin + segments) into a fully-realized legal [Move], or
+  /// null if it is not legal from [state]. Used to reconstruct and validate a
+  /// move received over a link, where only the origin and path are transmitted.
+  static Move? resolveMove(
+      GameState state, Position from, List<MoveSegment> path) {
+    if (state.isOver) return null;
+    final piece = state.pieceAt(from);
+    if (piece == null || piece.owner != state.currentPlayer) return null;
+
+    final n = stepsFor(piece);
+    final total = path.fold<int>(0, (a, s) => a + s.count);
+    if (total != n) return null;
+    if (path.isEmpty || path.length > 2) return null;
+    if (path.length == 2) {
+      final a = path[0].direction, b = path[1].direction;
+      if (b == a || b == a.opposite) return null;
+    }
+    return _walk(state, from, piece, path);
+  }
+
   /// Apply [move], returning the next [GameState]. Assumes [move] is legal
   /// (as produced by [reachableMoves] or checked with [isLegal]).
   ///
