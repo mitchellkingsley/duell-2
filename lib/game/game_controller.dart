@@ -61,12 +61,7 @@ class GameController extends ChangeNotifier {
   Move? get hoveredOption => _hoverOption;
   List<Position> get highlightedRoute => _hoverOption?.routeCells() ?? const [];
 
-  /// After a committed move, local mode pauses on a hand-off screen so the next
-  /// player can take the device without seeing the previous player's state.
-  bool _awaitingHandoff = false;
-  bool get awaitingHandoff => _awaitingHandoff;
-
-  /// The move just played, kept for the hand-off summary.
+  /// The move just played (most recent). Handy for a status line.
   Move? _lastMove;
   Move? get lastMove => _lastMove;
 
@@ -77,12 +72,15 @@ class GameController extends ChangeNotifier {
 
   bool get isOver => _state.isOver;
 
+  /// The player whose side should glow: the mover while a tumble is in flight
+  /// (the turn has already advanced in state), otherwise the player to move.
+  int get activePlayer => _animating?.owner ?? _state.currentPlayer;
+
   void newGame() {
     _state = initialGameState();
     _selected = null;
     _movesByDest = {};
     _previewDest = null;
-    _awaitingHandoff = false;
     _lastMove = null;
     _animating = null;
     _choiceDest = null;
@@ -98,12 +96,11 @@ class GameController extends ChangeNotifier {
     return piece != null &&
         piece.owner == _state.currentPlayer &&
         !_state.isOver &&
-        !_awaitingHandoff &&
         !isAnimating;
   }
 
   void select(Position p) {
-    if (_awaitingHandoff || _state.isOver || isAnimating) return;
+    if (_state.isOver || isAnimating) return;
     if (!isSelectable(p)) {
       _clearSelection();
       return;
@@ -129,7 +126,7 @@ class GameController extends ChangeNotifier {
   /// destination, open the route chooser if that square has two routes, or
   /// clear the selection.
   void tap(Position p) {
-    if (_awaitingHandoff || _state.isOver || isAnimating) return;
+    if (_state.isOver || isAnimating) return;
 
     // A tap anywhere while the chooser is open cancels it first.
     if (_choiceDest != null) {
@@ -173,8 +170,9 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Apply [move] through the engine, then start the tumble animation. The
-  /// hand-off (or win) screen is deferred until [onTumbleComplete] fires.
+  /// Apply [move] through the engine, then start the tumble animation. The turn
+  /// passes immediately; the glowing banner (not a confirmation) shows whose it
+  /// is once the tumble settles.
   void commit(Move move) {
     final piece = _state.pieceAt(move.from)!;
     final anim = TumbleAnim(
@@ -190,18 +188,11 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Called by the board when the tumble animation finishes. Reveals the
-  /// settled piece and shows the hand-off (unless the game just ended).
+  /// Called by the board when the tumble animation finishes: reveal the settled
+  /// piece. The turn has already advanced, so the other side's banner lights up.
   void onTumbleComplete() {
     if (_animating == null) return;
     _animating = null;
-    _awaitingHandoff = !_state.isOver;
-    notifyListeners();
-  }
-
-  /// Dismiss the hand-off screen; the next player now sees the board.
-  void continueAfterHandoff() {
-    _awaitingHandoff = false;
     notifyListeners();
   }
 

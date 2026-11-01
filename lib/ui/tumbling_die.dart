@@ -30,6 +30,7 @@ class TumblingDie extends StatefulWidget {
     required this.cellSize,
     required this.color,
     required this.onDone,
+    this.kingIcon,
     this.perStepMs = 150,
   });
 
@@ -37,6 +38,7 @@ class TumblingDie extends StatefulWidget {
   final double cellSize;
   final Color color;
   final VoidCallback onDone;
+  final IconData? kingIcon;
   final int perStepMs;
 
   @override
@@ -102,6 +104,7 @@ class _TumblingDieState extends State<TumblingDie>
         final top = _lerp(step.fromCell.row, step.toCell.row, local) * cs;
 
         return Stack(
+          clipBehavior: Clip.none,
           children: [
             Positioned(
               left: left,
@@ -114,6 +117,7 @@ class _TumblingDieState extends State<TumblingDie>
                   die: step.preDie,
                   color: widget.color,
                   isKing: widget.anim.isKing,
+                  kingIcon: widget.anim.isKing ? widget.kingIcon : null,
                   tumble: tumble,
                 ),
               ),

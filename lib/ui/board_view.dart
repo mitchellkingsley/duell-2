@@ -6,21 +6,54 @@ import '../game/game_controller.dart';
 import 'cube3d.dart';
 import 'tumbling_die.dart';
 
-/// Player colors. 0 = South, 1 = North.
-const List<Color> kPlayerColors = [Color(0xFF2E6FB8), Color(0xFFC0392B)];
+/// Player colors. 0 = South, 1 = North. Brightened for the dark board.
+const List<Color> kPlayerColors = [Color(0xFF3B82F6), Color(0xFFEF4444)];
 
-class BoardView extends StatelessWidget {
-  const BoardView({super.key, required this.controller});
+/// Dark board square colors and frame.
+const Color kSquareLight = Color(0xFF3C4654);
+const Color kSquareDark = Color(0xFF2A313B);
+const Color kBoardBorder = Color(0xFF11151A);
+
+/// Chooser (dark surfaces).
+const Color kChooserSurface = Color(0xFF242830);
+const Color kChooserCard = Color(0xFF30353E);
+const Color kChooserBorder = Color(0xFF454B55);
+
+class BoardView extends StatefulWidget {
+  const BoardView({
+    super.key,
+    required this.controller,
+    required this.kingIcon,
+  });
 
   final GameController controller;
+  final IconData kingIcon;
+
+  @override
+  State<BoardView> createState() => _BoardViewState();
+}
+
+class _BoardViewState extends State<BoardView>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1100),
+  )..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final controller = widget.controller;
     return AspectRatio(
       aspectRatio: 1,
       child: Container(
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.brown.shade800, width: 4),
+          border: Border.all(color: kBoardBorder, width: 4),
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -42,6 +75,8 @@ class BoardView extends StatelessWidget {
                                     child: _Cell(
                                       controller: controller,
                                       pos: Position(col, row),
+                                      kingIcon: widget.kingIcon,
+                                      pulse: _pulse,
                                     ),
                                   ),
                               ],
@@ -55,6 +90,7 @@ class BoardView extends StatelessWidget {
                         anim: anim,
                         cellSize: cell,
                         color: kPlayerColors[anim.owner],
+                        kingIcon: widget.kingIcon,
                         onDone: controller.onTumbleComplete,
                       ),
                     if (controller.isChoosing)
@@ -96,17 +132,19 @@ class BoardView extends StatelessWidget {
         left: left,
         top: top,
         child: Material(
-          elevation: 6,
+          elevation: 8,
           borderRadius: BorderRadius.circular(10),
-          color: Colors.white,
+          color: kChooserSurface,
           child: Padding(
             padding: const EdgeInsets.all(8),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Text('Roll which way?',
-                    style:
-                        TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                    style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white)),
                 const SizedBox(height: 6),
                 Row(
                   mainAxisSize: MainAxisSize.min,
@@ -163,10 +201,10 @@ class _OptionCard extends StatelessWidget {
           width: width,
           padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
           decoration: BoxDecoration(
-            color: hovered ? color.withValues(alpha: 0.12) : Colors.grey.shade100,
+            color: hovered ? color.withValues(alpha: 0.22) : kChooserCard,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: hovered ? color : Colors.grey.shade300,
+              color: hovered ? color : kChooserBorder,
               width: hovered ? 2 : 1,
             ),
           ),
@@ -182,7 +220,7 @@ class _OptionCard extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text('top ${move.resultTop}',
-                  style: const TextStyle(fontSize: 10)),
+                  style: const TextStyle(fontSize: 10, color: Colors.white70)),
             ],
           ),
         ),
@@ -192,10 +230,17 @@ class _OptionCard extends StatelessWidget {
 }
 
 class _Cell extends StatelessWidget {
-  const _Cell({required this.controller, required this.pos});
+  const _Cell({
+    required this.controller,
+    required this.pos,
+    required this.kingIcon,
+    required this.pulse,
+  });
 
   final GameController controller;
   final Position pos;
+  final IconData kingIcon;
+  final Animation<double> pulse;
 
   @override
   Widget build(BuildContext context) {
@@ -209,7 +254,8 @@ class _Cell extends StatelessWidget {
     final isPreview = controller.previewDest == pos;
 
     final light = (pos.col + pos.row) % 2 == 0;
-    final bg = light ? const Color(0xFFEBD9B3) : const Color(0xFF9E7B4F);
+    final bg = light ? kSquareLight : kSquareDark;
+    final teamColor = kPlayerColors[state.currentPlayer];
 
     // When hovering a chooser option, highlight the squares its route passes.
     final onRoute = controller.highlightedRoute.contains(pos);
@@ -224,10 +270,7 @@ class _Cell extends StatelessWidget {
           children: [
             Container(color: bg),
             if (onRoute)
-              Container(
-                color: kPlayerColors[controller.state.currentPlayer]
-                    .withValues(alpha: 0.30),
-              ),
+              Container(color: teamColor.withValues(alpha: 0.30)),
             if (isSelected)
               Container(
                 decoration: BoxDecoration(
@@ -242,46 +285,189 @@ class _Cell extends StatelessWidget {
                   die: piece.die,
                   color: kPlayerColors[piece.owner],
                   isKing: piece.isKing,
+                  kingIcon: piece.isKing ? kingIcon : null,
                 ),
               ),
-            if (isDestination) _destinationOverlay(movesHere, isPreview),
+            if (isDestination)
+              _DestIndicator(
+                moves: movesHere,
+                color: teamColor,
+                isPreview: isPreview,
+                pulse: pulse,
+              ),
           ],
         ),
       ),
     );
   }
+}
 
-  /// A marker on a legal destination. Shows the resulting top face(s) so the
-  /// outcome of the move is visible before committing (on hover and on touch).
-  Widget _destinationOverlay(List<Move> moves, bool isPreview) {
-    final capture = moves.any((m) => m.capturesOpponent);
-    final tops = moves.map((m) => m.resultTop).toSet().toList()..sort();
-    final label = tops.join(' / ');
+/// A full-cell, borderless, pulsing move indicator in the team color. A square
+/// reachable by two routes with different outcomes is bisected by the diagonal
+/// between opposite corners — chosen so each route's number sits in the triangle
+/// on the edge the die rolls in from — and each number is centered in its half.
+class _DestIndicator extends StatelessWidget {
+  const _DestIndicator({
+    required this.moves,
+    required this.color,
+    required this.isPreview,
+    required this.pulse,
+  });
+
+  final List<Move> moves;
+  final Color color;
+  final bool isPreview;
+  final Animation<double> pulse;
+
+  @override
+  Widget build(BuildContext context) {
+    final distinctTops = moves.map((m) => m.resultTop).toSet();
+    final split = moves.length >= 2 && distinctTops.length >= 2;
+
+    List<_Placed> placed;
+    Offset diagStart = Offset.zero, diagEnd = Offset.zero;
+
+    if (!split) {
+      placed = [
+        _Placed(moves.first.resultTop, moves.first.capturesOpponent,
+            const Offset(0.5, 0.5)),
+      ];
+    } else {
+      // One route finishes on a vertical roll, the other horizontal. Each rolls
+      // in from the edge opposite its final direction:
+      //   final South -> top edge, North -> bottom, East -> left, West -> right.
+      final vert = moves.firstWhere((m) =>
+          m.path.last.direction == Direction.north ||
+          m.path.last.direction == Direction.south);
+      final horiz = moves.firstWhere((m) => m != vert);
+      final vTop = vert.path.last.direction == Direction.south; // from top edge
+      final hLeft = horiz.path.last.direction == Direction.east; // from left edge
+
+      // Diagonal runs between opposite corners; its orientation depends on which
+      // corner the two entry edges share. Numbers sit at the triangle centroids.
+      Offset vPos, hPos;
+      const tl = Offset(0, 0), tr = Offset(1, 0), bl = Offset(0, 1), br = Offset(1, 1);
+      if (vTop && !hLeft) {
+        (diagStart, diagEnd) = (tr, bl); // share TR
+        (vPos, hPos) = (const Offset(1 / 3, 1 / 3), const Offset(2 / 3, 2 / 3));
+      } else if (vTop && hLeft) {
+        (diagStart, diagEnd) = (tl, br); // share TL
+        (vPos, hPos) = (const Offset(2 / 3, 1 / 3), const Offset(1 / 3, 2 / 3));
+      } else if (!vTop && !hLeft) {
+        (diagStart, diagEnd) = (tl, br); // share BR
+        (vPos, hPos) = (const Offset(1 / 3, 2 / 3), const Offset(2 / 3, 1 / 3));
+      } else {
+        (diagStart, diagEnd) = (tr, bl); // share BL
+        (vPos, hPos) = (const Offset(2 / 3, 2 / 3), const Offset(1 / 3, 1 / 3));
+      }
+      placed = [
+        _Placed(vert.resultTop, vert.capturesOpponent, vPos),
+        _Placed(horiz.resultTop, horiz.capturesOpponent, hPos),
+      ];
+    }
 
     return IgnorePointer(
-      child: Center(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(
-            color: (capture ? Colors.red : Colors.green)
-                .withValues(alpha: isPreview ? 0.95 : 0.7),
-            shape: BoxShape.rectangle,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.9),
-              width: isPreview ? 2.5 : 1.5,
+      child: AnimatedBuilder(
+        animation: pulse,
+        builder: (context, _) {
+          final t = Curves.easeInOut.transform(pulse.value);
+          return CustomPaint(
+            size: Size.infinite,
+            painter: _DestPainter(
+              color: color,
+              pulse: t,
+              isPreview: isPreview,
+              split: split,
+              placed: placed,
+              diagStart: diagStart,
+              diagEnd: diagEnd,
             ),
-          ),
-          child: Text(
-            capture ? '×$label' : label,
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: isPreview ? 15 : 12,
-            ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
+}
+
+/// A number drawn on an indicator: its value, capture flag, and position
+/// (fractional, 0..1 within the cell).
+class _Placed {
+  const _Placed(this.value, this.capture, this.pos);
+  final int value;
+  final bool capture;
+  final Offset pos;
+}
+
+class _DestPainter extends CustomPainter {
+  _DestPainter({
+    required this.color,
+    required this.pulse,
+    required this.isPreview,
+    required this.split,
+    required this.placed,
+    required this.diagStart,
+    required this.diagEnd,
+  });
+
+  final Color color;
+  final double pulse;
+  final bool isPreview;
+  final bool split;
+  final List<_Placed> placed;
+  final Offset diagStart;
+  final Offset diagEnd;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final base = isPreview ? 0.5 : 0.34;
+    final fill = Paint()..color = color.withValues(alpha: base + 0.16 * pulse);
+    canvas.drawRect(Offset.zero & size, fill);
+
+    if (split) {
+      canvas.drawLine(
+        Offset(diagStart.dx * size.width, diagStart.dy * size.height),
+        Offset(diagEnd.dx * size.width, diagEnd.dy * size.height),
+        Paint()
+          ..color = Colors.white.withValues(alpha: 0.5)
+          ..strokeWidth = 1.5,
+      );
+    }
+
+    final scale = split ? 0.28 : 0.34;
+    for (final p in placed) {
+      _number(canvas, size, p, scale);
+    }
+  }
+
+  void _number(Canvas canvas, Size size, _Placed p, double scale) {
+    final s = size.shortestSide;
+    final tp = TextPainter(
+      textDirection: TextDirection.ltr,
+      text: TextSpan(
+        text: p.capture ? '×${p.value}' : '${p.value}',
+        style: TextStyle(
+          fontFamily: 'JetBrainsMono',
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          fontSize: s * scale,
+        ),
+      ),
+    )..layout();
+    tp.paint(
+      canvas,
+      Offset(p.pos.dx * size.width - tp.width / 2,
+          p.pos.dy * size.height - tp.height / 2),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_DestPainter old) =>
+      old.pulse != pulse ||
+      old.color != color ||
+      old.isPreview != isPreview ||
+      old.split != split ||
+      old.diagStart != diagStart ||
+      old.placed.length != placed.length ||
+      (placed.isNotEmpty && old.placed.first.value != placed.first.value) ||
+      (placed.length > 1 && old.placed[1].value != placed[1].value);
 }

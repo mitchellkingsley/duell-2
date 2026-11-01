@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../game/game_controller.dart';
+import '../game/settings.dart';
 import 'board_view.dart';
 
-const List<String> kPlayerNames = ['South (Blue)', 'North (Red)'];
+const List<String> kPlayerNames = ['Blue', 'Red'];
 
-/// Local pass-and-play screen: the board, a turn/status banner, and a hand-off
-/// overlay between turns.
+/// Local pass-and-play screen: the board between two turn banners. The active
+/// player's banner glows — there is no confirmation step between turns.
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
 
@@ -27,7 +28,6 @@ class _GameScreenState extends State<GameScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Duell · Local 2-Player'),
         actions: [
           IconButton(
             tooltip: 'New game',
@@ -39,26 +39,30 @@ class _GameScreenState extends State<GameScreen> {
       body: AnimatedBuilder(
         animation: controller,
         builder: (context, _) {
+          final active = controller.activePlayer;
           return Stack(
             children: [
               Column(
                 children: [
-                  _StatusBanner(controller: controller),
+                  // North sits at the top of the board.
+                  _TurnBanner(player: 1, active: active == 1 && !controller.isOver),
                   Expanded(
                     child: Center(
                       child: Padding(
                         padding: const EdgeInsets.all(12),
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 640),
-                          child: BoardView(controller: controller),
+                          child: BoardView(
+                            controller: controller,
+                            kingIcon: Settings.instance.kingIcon,
+                          ),
                         ),
                       ),
                     ),
                   ),
+                  _TurnBanner(player: 0, active: active == 0 && !controller.isOver),
                 ],
               ),
-              if (controller.awaitingHandoff)
-                _HandoffOverlay(controller: controller),
               if (controller.isOver) _WinOverlay(controller: controller),
             ],
           );
@@ -68,81 +72,85 @@ class _GameScreenState extends State<GameScreen> {
   }
 }
 
-class _StatusBanner extends StatelessWidget {
-  const _StatusBanner({required this.controller});
+/// A glowing banner for one player's side. Pulses while [active].
+class _TurnBanner extends StatefulWidget {
+  const _TurnBanner({required this.player, required this.active});
 
-  final GameController controller;
+  final int player;
+  final bool active;
 
   @override
-  Widget build(BuildContext context) {
-    final player = controller.state.currentPlayer;
-    return Container(
-      width: double.infinity,
-      color: kPlayerColors[player].withValues(alpha: 0.15),
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-      child: Row(
-        children: [
-          CircleAvatar(radius: 10, backgroundColor: kPlayerColors[player]),
-          const SizedBox(width: 10),
-          Text(
-            controller.isOver
-                ? 'Game over'
-                : '${kPlayerNames[player]} to move',
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          ),
-          const Spacer(),
-          Text('Turn ${controller.state.turnNumber}',
-              style: const TextStyle(color: Colors.black54)),
-        ],
-      ),
-    );
-  }
+  State<_TurnBanner> createState() => _TurnBannerState();
 }
 
-class _HandoffOverlay extends StatelessWidget {
-  const _HandoffOverlay({required this.controller});
+class _TurnBannerState extends State<_TurnBanner>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1300),
+  )..repeat(reverse: true);
 
-  final GameController controller;
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final next = controller.state.currentPlayer;
-    final move = controller.lastMove;
-    return Positioned.fill(
-      child: GestureDetector(
-        onTap: controller.continueAfterHandoff,
-        child: Container(
-          color: Colors.black.withValues(alpha: 0.82),
+    final color = kPlayerColors[widget.player];
+    return AnimatedBuilder(
+      animation: _pulse,
+      builder: (context, _) {
+        final t = Curves.easeInOut.transform(_pulse.value);
+        final active = widget.active;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          height: 32,
+          decoration: BoxDecoration(
+            color: active
+                ? color.withValues(alpha: 0.18 + 0.10 * t)
+                : const Color(0xFF1B1F25),
+            boxShadow: active
+                ? [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.30 + 0.35 * t),
+                      blurRadius: 14 + 10 * t,
+                      spreadRadius: 1 + 1.5 * t,
+                    ),
+                  ]
+                : const [],
+          ),
           child: Center(
-            child: Column(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.swap_horiz, color: Colors.white, size: 48),
-                const SizedBox(height: 16),
-                Text(
-                  'Pass the device to\n${kPlayerNames[next]}',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white, fontSize: 24),
-                ),
-                if (move != null) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    'Last move: ${move.notation}'
-                    '${move.capturesOpponent ? ' · capture!' : ''}'
-                    ' · top ${move.resultTop}',
-                    style: const TextStyle(color: Colors.white70),
+                Container(
+                  width: 9,
+                  height: 9,
+                  decoration: BoxDecoration(
+                    color: active ? color : color.withValues(alpha: 0.25),
+                    shape: BoxShape.circle,
                   ),
-                ],
-                const SizedBox(height: 28),
-                FilledButton(
-                  onPressed: controller.continueAfterHandoff,
-                  child: const Text("I'm ready"),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  active
+                      ? "${kPlayerNames[widget.player]}'s Turn"
+                      : kPlayerNames[widget.player],
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: active ? FontWeight.w700 : FontWeight.w400,
+                    color: active
+                        ? Colors.white
+                        : Colors.white.withValues(alpha: 0.28),
+                  ),
                 ),
               ],
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
