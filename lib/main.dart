@@ -1,5 +1,10 @@
+import 'dart:async';
+
+import 'package:app_links/app_links.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
+import 'game/deep_links.dart';
 import 'game/match_store.dart';
 import 'game/settings.dart';
 import 'ui/home_screen.dart';
@@ -9,16 +14,58 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Settings.instance.load();
   await MatchStore.instance.init();
-  runApp(const DuellApp());
+
+  // The token the app was opened with, if any.
+  String? initialToken;
+  if (kIsWeb) {
+    initialToken = Uri.base.queryParameters['t'];
+  } else {
+    try {
+      final uri = await AppLinks().getInitialLink();
+      if (uri != null) initialToken = tokenFromUri(uri);
+    } catch (_) {}
+  }
+
+  runApp(DuellApp(initialToken: initialToken));
 }
 
-class DuellApp extends StatelessWidget {
-  const DuellApp({super.key});
+class DuellApp extends StatefulWidget {
+  const DuellApp({super.key, this.initialToken});
+
+  final String? initialToken;
+
+  @override
+  State<DuellApp> createState() => _DuellAppState();
+}
+
+class _DuellAppState extends State<DuellApp> {
+  final _navKey = GlobalKey<NavigatorState>();
+  StreamSubscription<Uri>? _linkSub;
+
+  @override
+  void initState() {
+    super.initState();
+    // Warm deep links (app already running) on Android.
+    if (!kIsWeb) {
+      _linkSub = AppLinks().uriLinkStream.listen((uri) {
+        final token = tokenFromUri(uri);
+        if (token != null && token.isNotEmpty) {
+          _navKey.currentState?.push(
+            MaterialPageRoute(builder: (_) => InboundLauncher(token: token)),
+          );
+        }
+      }, onError: (_) {});
+    }
+  }
+
+  @override
+  void dispose() {
+    _linkSub?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    // If the app was opened via a turn link (?t=...), go straight into it.
-    final inboundToken = Uri.base.queryParameters['t'];
     final base = ThemeData(
       brightness: Brightness.dark,
       colorSchemeSeed: const Color(0xFF4A90D9),
@@ -26,14 +73,16 @@ class DuellApp extends StatelessWidget {
       useMaterial3: true,
       fontFamily: 'JetBrainsMono',
     );
+    final token = widget.initialToken;
     return MaterialApp(
       title: 'Duell',
       debugShowCheckedModeBanner: false,
+      navigatorKey: _navKey,
       themeMode: ThemeMode.dark,
       // JetBrains Mono is a variable font; nudge the default weight heavier.
       darkTheme: base.copyWith(textTheme: _heavier(base.textTheme)),
-      home: (inboundToken != null && inboundToken.isNotEmpty)
-          ? InboundLauncher(token: inboundToken)
+      home: (token != null && token.isNotEmpty)
+          ? InboundLauncher(token: token)
           : const HomeScreen(),
     );
   }

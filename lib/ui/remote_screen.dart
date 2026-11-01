@@ -5,14 +5,16 @@ import 'package:flutter/services.dart';
 
 import '../core/setup.dart';
 import '../core/turn_link.dart';
+import '../game/deep_links.dart';
 import '../game/game_controller.dart';
 import '../game/match_store.dart';
 import '../game/settings.dart';
 import 'board_view.dart';
 import 'game_screen.dart' show kPlayerNames;
 
-/// Build the shareable link for a turn token (web: current origin + ?t=).
-String buildShareLink(String token) => '${Uri.base.origin}/?t=$token';
+/// Build the shareable link for a turn token.
+String buildShareLink(String token) =>
+    buildTurnLink(token, webOrigin: Uri.base.origin);
 
 /// Create or continue a game from an inbound link token. Returns a ready
 /// controller, or an error message to show the user.

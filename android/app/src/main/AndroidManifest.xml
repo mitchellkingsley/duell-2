@@ -24,6 +24,29 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+
+            <!-- Custom scheme for development/testing (not linkified by most
+                 messaging apps, but easy to fire via `adb`):
+                 adb shell am start -a android.intent.action.VIEW -d "duell://turn?t=<token>" -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="duell" android:host="turn"/>
+            </intent-filter>
+
+            <!-- Verified HTTPS App Link. Replace the host with a domain you own
+                 and host /.well-known/assetlinks.json on it (see
+                 deploy/assetlinks.json). Until verified, these taps open the
+                 browser instead of the app. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="https"
+                      android:host="play.duell.example"
+                      android:pathPrefix="/t"/>
+            </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
