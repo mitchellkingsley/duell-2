@@ -1,0 +1,1577 @@
+{
+  "$schema_description": "Full move-outcome table for Duell (Parker Brothers/Lakeside, 1976), transcribed from the printed 'Top No. 1'-'Top No. 6' reference diagrams and verified by simulating standard die-roll ('tumbling') physics, cross-checked against the scanned diagrams for internal consistency (single die chirality, opposite faces sum to 7). A die showing topNumber N on top may move exactly N spaces, tumbling one space at a time, with at most one 90-degree turn in the path (rule 3). Coordinates: dx/dy are offsets in board squares from the die's starting square; +dx = one square east, +dy = one square south (so -dy = north, matching the 'inward'/north orientation used at game setup). 'order' lists the move as direction+distance segments in the sequence actually tumbled, e.g. ['N2','E1'] means tumble 2 spaces north then 1 space east. 'resultTop' is the number shown on top of the die after completing that exact path. Where a square is reachable by two different orderings of the same two segments, both are listed, since (per the rules' Playing Hints) the route taken determines the resulting top number.",
+  "directions": {
+    "N": "toward the opponent/away from the mover (board 'up')",
+    "S": "toward the mover",
+    "E": "right",
+    "W": "left"
+  },
+  "topNumbers": {
+    "1": {
+      "startTop": 1,
+      "startOrientation": {
+        "top": 1,
+        "bottom": 6,
+        "north": 4,
+        "south": 3,
+        "east": 5,
+        "west": 2
+      },
+      "squares": [
+        {
+          "dx": 0,
+          "dy": -1,
+          "paths": [
+            {
+              "order": [
+                "N1"
+              ],
+              "resultTop": 3
+            }
+          ]
+        },
+        {
+          "dx": -1,
+          "dy": 0,
+          "paths": [
+            {
+              "order": [
+                "W1"
+              ],
+              "resultTop": 5
+            }
+          ]
+        },
+        {
+          "dx": 1,
+          "dy": 0,
+          "paths": [
+            {
+              "order": [
+                "E1"
+              ],
+              "resultTop": 2
+            }
+          ]
+        },
+        {
+          "dx": 0,
+          "dy": 1,
+          "paths": [
+            {
+              "order": [
+                "S1"
+              ],
+              "resultTop": 4
+            }
+          ]
+        }
+      ]
+    },
+    "2": {
+      "startTop": 2,
+      "startOrientation": {
+        "top": 2,
+        "bottom": 5,
+        "north": 6,
+        "south": 1,
+        "east": 4,
+        "west": 3
+      },
+      "squares": [
+        {
+          "dx": 0,
+          "dy": -2,
+          "paths": [
+            {
+              "order": [
+                "N2"
+              ],
+              "resultTop": 5
+            }
+          ]
+        },
+        {
+          "dx": -1,
+          "dy": -1,
+          "paths": [
+            {
+              "order": [
+                "N1",
+                "W1"
+              ],
+              "resultTop": 4
+            },
+            {
+              "order": [
+                "W1",
+                "N1"
+              ],
+              "resultTop": 1
+            }
+          ]
+        },
+        {
+          "dx": 1,
+          "dy": -1,
+          "paths": [
+            {
+              "order": [
+                "N1",
+                "E1"
+              ],
+              "resultTop": 3
+            },
+            {
+              "order": [
+                "E1",
+                "N1"
+              ],
+              "resultTop": 1
+            }
+          ]
+        },
+        {
+          "dx": -2,
+          "dy": 0,
+          "paths": [
+            {
+              "order": [
+                "W2"
+              ],
+              "resultTop": 5
+            }
+          ]
+        },
+        {
+          "dx": 2,
+          "dy": 0,
+          "paths": [
+            {
+              "order": [
+                "E2"
+              ],
+              "resultTop": 5
+            }
+          ]
+        },
+        {
+          "dx": -1,
+          "dy": 1,
+          "paths": [
+            {
+              "order": [
+                "S1",
+                "W1"
+              ],
+              "resultTop": 4
+            },
+            {
+              "order": [
+                "W1",
+                "S1"
+              ],
+              "resultTop": 6
+            }
+          ]
+        },
+        {
+          "dx": 1,
+          "dy": 1,
+          "paths": [
+            {
+              "order": [
+                "S1",
+                "E1"
+              ],
+              "resultTop": 3
+            },
+            {
+              "order": [
+                "E1",
+                "S1"
+              ],
+              "resultTop": 6
+            }
+          ]
+        },
+        {
+          "dx": 0,
+          "dy": 2,
+          "paths": [
+            {
+              "order": [
+                "S2"
+              ],
+              "resultTop": 5
+            }
+          ]
+        }
+      ]
+    },
+    "3": {
+      "startTop": 3,
+      "startOrientation": {
+        "top": 3,
+        "bottom": 4,
+        "north": 2,
+        "south": 5,
+        "east": 1,
+        "west": 6
+      },
+      "squares": [
+        {
+          "dx": 0,
+          "dy": -3,
+          "paths": [
+            {
+              "order": [
+                "N3"
+              ],
+              "resultTop": 2
+            }
+          ]
+        },
+        {
+          "dx": -1,
+          "dy": -2,
+          "paths": [
+            {
+              "order": [
+                "N2",
+                "W1"
+              ],
+              "resultTop": 1
+            },
+            {
+              "order": [
+                "W1",
+                "N2"
+              ],
+              "resultTop": 6
+            }
+          ]
+        },
+        {
+          "dx": 1,
+          "dy": -2,
+          "paths": [
+            {
+              "order": [
+                "N2",
+                "E1"
+              ],
+              "resultTop": 6
+            },
+            {
+              "order": [
+                "E1",
+                "N2"
+              ],
+              "resultTop": 1
+            }
+          ]
+        },
+        {
+          "dx": -2,
+          "dy": -1,
+          "paths": [
+            {
+              "order": [
+                "N1",
+                "W2"
+              ],
+              "resultTop": 2
+            },
+            {
+              "order": [
+                "W2",
+                "N1"
+              ],
+              "resultTop": 5
+            }
+          ]
+        },
+        {
+          "dx": 2,
+          "dy": -1,
+          "paths": [
+            {
+              "order": [
+                "N1",
+                "E2"
+              ],
+              "resultTop": 2
+            },
+            {
+              "order": [
+                "E2",
+                "N1"
+              ],
+              "resultTop": 5
+            }
+          ]
+        },
+        {
+          "dx": -3,
+          "dy": 0,
+          "paths": [
+            {
+              "order": [
+                "W3"
+              ],
+              "resultTop": 6
+            }
+          ]
+        },
+        {
+          "dx": 3,
+          "dy": 0,
+          "paths": [
+            {
+              "order": [
+                "E3"
+              ],
+              "resultTop": 1
+            }
+          ]
+        },
+        {
+          "dx": -2,
+          "dy": 1,
+          "paths": [
+            {
+              "order": [
+                "S1",
+                "W2"
+              ],
+              "resultTop": 5
+            },
+            {
+              "order": [
+                "W2",
+                "S1"
+              ],
+              "resultTop": 2
+            }
+          ]
+        },
+        {
+          "dx": 2,
+          "dy": 1,
+          "paths": [
+            {
+              "order": [
+                "S1",
+                "E2"
+              ],
+              "resultTop": 5
+            },
+            {
+              "order": [
+                "E2",
+                "S1"
+              ],
+              "resultTop": 2
+            }
+          ]
+        },
+        {
+          "dx": -1,
+          "dy": 2,
+          "paths": [
+            {
+              "order": [
+                "S2",
+                "W1"
+              ],
+              "resultTop": 1
+            },
+            {
+              "order": [
+                "W1",
+                "S2"
+              ],
+              "resultTop": 6
+            }
+          ]
+        },
+        {
+          "dx": 1,
+          "dy": 2,
+          "paths": [
+            {
+              "order": [
+                "S2",
+                "E1"
+              ],
+              "resultTop": 6
+            },
+            {
+              "order": [
+                "E1",
+                "S2"
+              ],
+              "resultTop": 1
+            }
+          ]
+        },
+        {
+          "dx": 0,
+          "dy": 3,
+          "paths": [
+            {
+              "order": [
+                "S3"
+              ],
+              "resultTop": 5
+            }
+          ]
+        }
+      ]
+    },
+    "4": {
+      "startTop": 4,
+      "startOrientation": {
+        "top": 4,
+        "bottom": 3,
+        "north": 2,
+        "south": 5,
+        "east": 6,
+        "west": 1
+      },
+      "squares": [
+        {
+          "dx": 0,
+          "dy": -4,
+          "paths": [
+            {
+              "order": [
+                "N4"
+              ],
+              "resultTop": 4
+            }
+          ]
+        },
+        {
+          "dx": -1,
+          "dy": -3,
+          "paths": [
+            {
+              "order": [
+                "N3",
+                "W1"
+              ],
+              "resultTop": 6
+            },
+            {
+              "order": [
+                "W1",
+                "N3"
+              ],
+              "resultTop": 2
+            }
+          ]
+        },
+        {
+          "dx": 1,
+          "dy": -3,
+          "paths": [
+            {
+              "order": [
+                "N3",
+                "E1"
+              ],
+              "resultTop": 1
+            },
+            {
+              "order": [
+                "E1",
+                "N3"
+              ],
+              "resultTop": 2
+            }
+          ]
+        },
+        {
+          "dx": -2,
+          "dy": -2,
+          "paths": [
+            {
+              "order": [
+                "N2",
+                "W2"
+              ],
+              "resultTop": 4
+            },
+            {
+              "order": [
+                "W2",
+                "N2"
+              ],
+              "resultTop": 4
+            }
+          ]
+        },
+        {
+          "dx": 2,
+          "dy": -2,
+          "paths": [
+            {
+              "order": [
+                "N2",
+                "E2"
+              ],
+              "resultTop": 4
+            },
+            {
+              "order": [
+                "E2",
+                "N2"
+              ],
+              "resultTop": 4
+            }
+          ]
+        },
+        {
+          "dx": -3,
+          "dy": -1,
+          "paths": [
+            {
+              "order": [
+                "N1",
+                "W3"
+              ],
+              "resultTop": 1
+            },
+            {
+              "order": [
+                "W3",
+                "N1"
+              ],
+              "resultTop": 5
+            }
+          ]
+        },
+        {
+          "dx": 3,
+          "dy": -1,
+          "paths": [
+            {
+              "order": [
+                "N1",
+                "E3"
+              ],
+              "resultTop": 6
+            },
+            {
+              "order": [
+                "E3",
+                "N1"
+              ],
+              "resultTop": 5
+            }
+          ]
+        },
+        {
+          "dx": -4,
+          "dy": 0,
+          "paths": [
+            {
+              "order": [
+                "W4"
+              ],
+              "resultTop": 4
+            }
+          ]
+        },
+        {
+          "dx": 4,
+          "dy": 0,
+          "paths": [
+            {
+              "order": [
+                "E4"
+              ],
+              "resultTop": 4
+            }
+          ]
+        },
+        {
+          "dx": -3,
+          "dy": 1,
+          "paths": [
+            {
+              "order": [
+                "S1",
+                "W3"
+              ],
+              "resultTop": 1
+            },
+            {
+              "order": [
+                "W3",
+                "S1"
+              ],
+              "resultTop": 2
+            }
+          ]
+        },
+        {
+          "dx": 3,
+          "dy": 1,
+          "paths": [
+            {
+              "order": [
+                "S1",
+                "E3"
+              ],
+              "resultTop": 6
+            },
+            {
+              "order": [
+                "E3",
+                "S1"
+              ],
+              "resultTop": 2
+            }
+          ]
+        },
+        {
+          "dx": -2,
+          "dy": 2,
+          "paths": [
+            {
+              "order": [
+                "S2",
+                "W2"
+              ],
+              "resultTop": 4
+            },
+            {
+              "order": [
+                "W2",
+                "S2"
+              ],
+              "resultTop": 4
+            }
+          ]
+        },
+        {
+          "dx": 2,
+          "dy": 2,
+          "paths": [
+            {
+              "order": [
+                "S2",
+                "E2"
+              ],
+              "resultTop": 4
+            },
+            {
+              "order": [
+                "E2",
+                "S2"
+              ],
+              "resultTop": 4
+            }
+          ]
+        },
+        {
+          "dx": -1,
+          "dy": 3,
+          "paths": [
+            {
+              "order": [
+                "S3",
+                "W1"
+              ],
+              "resultTop": 6
+            },
+            {
+              "order": [
+                "W1",
+                "S3"
+              ],
+              "resultTop": 5
+            }
+          ]
+        },
+        {
+          "dx": 1,
+          "dy": 3,
+          "paths": [
+            {
+              "order": [
+                "S3",
+                "E1"
+              ],
+              "resultTop": 1
+            },
+            {
+              "order": [
+                "E1",
+                "S3"
+              ],
+              "resultTop": 5
+            }
+          ]
+        },
+        {
+          "dx": 0,
+          "dy": 4,
+          "paths": [
+            {
+              "order": [
+                "S4"
+              ],
+              "resultTop": 4
+            }
+          ]
+        }
+      ]
+    },
+    "5": {
+      "startTop": 5,
+      "startOrientation": {
+        "top": 5,
+        "bottom": 2,
+        "north": 3,
+        "south": 4,
+        "east": 1,
+        "west": 6
+      },
+      "squares": [
+        {
+          "dx": 0,
+          "dy": -5,
+          "paths": [
+            {
+              "order": [
+                "N5"
+              ],
+              "resultTop": 4
+            }
+          ]
+        },
+        {
+          "dx": -1,
+          "dy": -4,
+          "paths": [
+            {
+              "order": [
+                "N4",
+                "W1"
+              ],
+              "resultTop": 1
+            },
+            {
+              "order": [
+                "W1",
+                "N4"
+              ],
+              "resultTop": 1
+            }
+          ]
+        },
+        {
+          "dx": 1,
+          "dy": -4,
+          "paths": [
+            {
+              "order": [
+                "N4",
+                "E1"
+              ],
+              "resultTop": 6
+            },
+            {
+              "order": [
+                "E1",
+                "N4"
+              ],
+              "resultTop": 6
+            }
+          ]
+        },
+        {
+          "dx": -2,
+          "dy": -3,
+          "paths": [
+            {
+              "order": [
+                "N3",
+                "W2"
+              ],
+              "resultTop": 4
+            },
+            {
+              "order": [
+                "W2",
+                "N3"
+              ],
+              "resultTop": 3
+            }
+          ]
+        },
+        {
+          "dx": 2,
+          "dy": -3,
+          "paths": [
+            {
+              "order": [
+                "N3",
+                "E2"
+              ],
+              "resultTop": 4
+            },
+            {
+              "order": [
+                "E2",
+                "N3"
+              ],
+              "resultTop": 3
+            }
+          ]
+        },
+        {
+          "dx": -3,
+          "dy": -2,
+          "paths": [
+            {
+              "order": [
+                "N2",
+                "W3"
+              ],
+              "resultTop": 6
+            },
+            {
+              "order": [
+                "W3",
+                "N2"
+              ],
+              "resultTop": 1
+            }
+          ]
+        },
+        {
+          "dx": 3,
+          "dy": -2,
+          "paths": [
+            {
+              "order": [
+                "N2",
+                "E3"
+              ],
+              "resultTop": 1
+            },
+            {
+              "order": [
+                "E3",
+                "N2"
+              ],
+              "resultTop": 6
+            }
+          ]
+        },
+        {
+          "dx": -4,
+          "dy": -1,
+          "paths": [
+            {
+              "order": [
+                "N1",
+                "W4"
+              ],
+              "resultTop": 4
+            },
+            {
+              "order": [
+                "W4",
+                "N1"
+              ],
+              "resultTop": 4
+            }
+          ]
+        },
+        {
+          "dx": 4,
+          "dy": -1,
+          "paths": [
+            {
+              "order": [
+                "N1",
+                "E4"
+              ],
+              "resultTop": 4
+            },
+            {
+              "order": [
+                "E4",
+                "N1"
+              ],
+              "resultTop": 4
+            }
+          ]
+        },
+        {
+          "dx": -5,
+          "dy": 0,
+          "paths": [
+            {
+              "order": [
+                "W5"
+              ],
+              "resultTop": 1
+            }
+          ]
+        },
+        {
+          "dx": 5,
+          "dy": 0,
+          "paths": [
+            {
+              "order": [
+                "E5"
+              ],
+              "resultTop": 6
+            }
+          ]
+        },
+        {
+          "dx": -4,
+          "dy": 1,
+          "paths": [
+            {
+              "order": [
+                "S1",
+                "W4"
+              ],
+              "resultTop": 3
+            },
+            {
+              "order": [
+                "W4",
+                "S1"
+              ],
+              "resultTop": 3
+            }
+          ]
+        },
+        {
+          "dx": 4,
+          "dy": 1,
+          "paths": [
+            {
+              "order": [
+                "S1",
+                "E4"
+              ],
+              "resultTop": 3
+            },
+            {
+              "order": [
+                "E4",
+                "S1"
+              ],
+              "resultTop": 3
+            }
+          ]
+        },
+        {
+          "dx": -3,
+          "dy": 2,
+          "paths": [
+            {
+              "order": [
+                "S2",
+                "W3"
+              ],
+              "resultTop": 6
+            },
+            {
+              "order": [
+                "W3",
+                "S2"
+              ],
+              "resultTop": 1
+            }
+          ]
+        },
+        {
+          "dx": 3,
+          "dy": 2,
+          "paths": [
+            {
+              "order": [
+                "S2",
+                "E3"
+              ],
+              "resultTop": 1
+            },
+            {
+              "order": [
+                "E3",
+                "S2"
+              ],
+              "resultTop": 6
+            }
+          ]
+        },
+        {
+          "dx": -2,
+          "dy": 3,
+          "paths": [
+            {
+              "order": [
+                "S3",
+                "W2"
+              ],
+              "resultTop": 3
+            },
+            {
+              "order": [
+                "W2",
+                "S3"
+              ],
+              "resultTop": 4
+            }
+          ]
+        },
+        {
+          "dx": 2,
+          "dy": 3,
+          "paths": [
+            {
+              "order": [
+                "S3",
+                "E2"
+              ],
+              "resultTop": 3
+            },
+            {
+              "order": [
+                "E2",
+                "S3"
+              ],
+              "resultTop": 4
+            }
+          ]
+        },
+        {
+          "dx": -1,
+          "dy": 4,
+          "paths": [
+            {
+              "order": [
+                "S4",
+                "W1"
+              ],
+              "resultTop": 1
+            },
+            {
+              "order": [
+                "W1",
+                "S4"
+              ],
+              "resultTop": 1
+            }
+          ]
+        },
+        {
+          "dx": 1,
+          "dy": 4,
+          "paths": [
+            {
+              "order": [
+                "S4",
+                "E1"
+              ],
+              "resultTop": 6
+            },
+            {
+              "order": [
+                "E1",
+                "S4"
+              ],
+              "resultTop": 6
+            }
+          ]
+        },
+        {
+          "dx": 0,
+          "dy": 5,
+          "paths": [
+            {
+              "order": [
+                "S5"
+              ],
+              "resultTop": 3
+            }
+          ]
+        }
+      ]
+    },
+    "6": {
+      "startTop": 6,
+      "startOrientation": {
+        "top": 6,
+        "bottom": 1,
+        "north": 5,
+        "south": 2,
+        "east": 4,
+        "west": 3
+      },
+      "squares": [
+        {
+          "dx": 0,
+          "dy": -6,
+          "paths": [
+            {
+              "order": [
+                "N6"
+              ],
+              "resultTop": 1
+            }
+          ]
+        },
+        {
+          "dx": -1,
+          "dy": -5,
+          "paths": [
+            {
+              "order": [
+                "N5",
+                "W1"
+              ],
+              "resultTop": 4
+            },
+            {
+              "order": [
+                "W1",
+                "N5"
+              ],
+              "resultTop": 2
+            }
+          ]
+        },
+        {
+          "dx": 1,
+          "dy": -5,
+          "paths": [
+            {
+              "order": [
+                "N5",
+                "E1"
+              ],
+              "resultTop": 3
+            },
+            {
+              "order": [
+                "E1",
+                "N5"
+              ],
+              "resultTop": 2
+            }
+          ]
+        },
+        {
+          "dx": -2,
+          "dy": -4,
+          "paths": [
+            {
+              "order": [
+                "N4",
+                "W2"
+              ],
+              "resultTop": 1
+            },
+            {
+              "order": [
+                "W2",
+                "N4"
+              ],
+              "resultTop": 1
+            }
+          ]
+        },
+        {
+          "dx": 2,
+          "dy": -4,
+          "paths": [
+            {
+              "order": [
+                "N4",
+                "E2"
+              ],
+              "resultTop": 1
+            },
+            {
+              "order": [
+                "E2",
+                "N4"
+              ],
+              "resultTop": 1
+            }
+          ]
+        },
+        {
+          "dx": -3,
+          "dy": -3,
+          "paths": [
+            {
+              "order": [
+                "N3",
+                "W3"
+              ],
+              "resultTop": 3
+            },
+            {
+              "order": [
+                "W3",
+                "N3"
+              ],
+              "resultTop": 5
+            }
+          ]
+        },
+        {
+          "dx": 3,
+          "dy": -3,
+          "paths": [
+            {
+              "order": [
+                "N3",
+                "E3"
+              ],
+              "resultTop": 4
+            },
+            {
+              "order": [
+                "E3",
+                "N3"
+              ],
+              "resultTop": 5
+            }
+          ]
+        },
+        {
+          "dx": -4,
+          "dy": -2,
+          "paths": [
+            {
+              "order": [
+                "N2",
+                "W4"
+              ],
+              "resultTop": 1
+            },
+            {
+              "order": [
+                "W4",
+                "N2"
+              ],
+              "resultTop": 1
+            }
+          ]
+        },
+        {
+          "dx": 4,
+          "dy": -2,
+          "paths": [
+            {
+              "order": [
+                "N2",
+                "E4"
+              ],
+              "resultTop": 1
+            },
+            {
+              "order": [
+                "E4",
+                "N2"
+              ],
+              "resultTop": 1
+            }
+          ]
+        },
+        {
+          "dx": -5,
+          "dy": -1,
+          "paths": [
+            {
+              "order": [
+                "N1",
+                "W5"
+              ],
+              "resultTop": 4
+            },
+            {
+              "order": [
+                "W5",
+                "N1"
+              ],
+              "resultTop": 2
+            }
+          ]
+        },
+        {
+          "dx": 5,
+          "dy": -1,
+          "paths": [
+            {
+              "order": [
+                "N1",
+                "E5"
+              ],
+              "resultTop": 3
+            },
+            {
+              "order": [
+                "E5",
+                "N1"
+              ],
+              "resultTop": 2
+            }
+          ]
+        },
+        {
+          "dx": -6,
+          "dy": 0,
+          "paths": [
+            {
+              "order": [
+                "W6"
+              ],
+              "resultTop": 1
+            }
+          ]
+        },
+        {
+          "dx": 6,
+          "dy": 0,
+          "paths": [
+            {
+              "order": [
+                "E6"
+              ],
+              "resultTop": 1
+            }
+          ]
+        },
+        {
+          "dx": -5,
+          "dy": 1,
+          "paths": [
+            {
+              "order": [
+                "S1",
+                "W5"
+              ],
+              "resultTop": 4
+            },
+            {
+              "order": [
+                "W5",
+                "S1"
+              ],
+              "resultTop": 5
+            }
+          ]
+        },
+        {
+          "dx": 5,
+          "dy": 1,
+          "paths": [
+            {
+              "order": [
+                "S1",
+                "E5"
+              ],
+              "resultTop": 3
+            },
+            {
+              "order": [
+                "E5",
+                "S1"
+              ],
+              "resultTop": 5
+            }
+          ]
+        },
+        {
+          "dx": -4,
+          "dy": 2,
+          "paths": [
+            {
+              "order": [
+                "S2",
+                "W4"
+              ],
+              "resultTop": 1
+            },
+            {
+              "order": [
+                "W4",
+                "S2"
+              ],
+              "resultTop": 1
+            }
+          ]
+        },
+        {
+          "dx": 4,
+          "dy": 2,
+          "paths": [
+            {
+              "order": [
+                "S2",
+                "E4"
+              ],
+              "resultTop": 1
+            },
+            {
+              "order": [
+                "E4",
+                "S2"
+              ],
+              "resultTop": 1
+            }
+          ]
+        },
+        {
+          "dx": -3,
+          "dy": 3,
+          "paths": [
+            {
+              "order": [
+                "S3",
+                "W3"
+              ],
+              "resultTop": 3
+            },
+            {
+              "order": [
+                "W3",
+                "S3"
+              ],
+              "resultTop": 2
+            }
+          ]
+        },
+        {
+          "dx": 3,
+          "dy": 3,
+          "paths": [
+            {
+              "order": [
+                "S3",
+                "E3"
+              ],
+              "resultTop": 4
+            },
+            {
+              "order": [
+                "E3",
+                "S3"
+              ],
+              "resultTop": 2
+            }
+          ]
+        },
+        {
+          "dx": -2,
+          "dy": 4,
+          "paths": [
+            {
+              "order": [
+                "S4",
+                "W2"
+              ],
+              "resultTop": 1
+            },
+            {
+              "order": [
+                "W2",
+                "S4"
+              ],
+              "resultTop": 1
+            }
+          ]
+        },
+        {
+          "dx": 2,
+          "dy": 4,
+          "paths": [
+            {
+              "order": [
+                "S4",
+                "E2"
+              ],
+              "resultTop": 1
+            },
+            {
+              "order": [
+                "E2",
+                "S4"
+              ],
+              "resultTop": 1
+            }
+          ]
+        },
+        {
+          "dx": -1,
+          "dy": 5,
+          "paths": [
+            {
+              "order": [
+                "S5",
+                "W1"
+              ],
+              "resultTop": 4
+            },
+            {
+              "order": [
+                "W1",
+                "S5"
+              ],
+              "resultTop": 5
+            }
+          ]
+        },
+        {
+          "dx": 1,
+          "dy": 5,
+          "paths": [
+            {
+              "order": [
+                "S5",
+                "E1"
+              ],
+              "resultTop": 3
+            },
+            {
+              "order": [
+                "E1",
+                "S5"
+              ],
+              "resultTop": 5
+            }
+          ]
+        },
+        {
+          "dx": 0,
+          "dy": 6,
+          "paths": [
+            {
+              "order": [
+                "S6"
+              ],
+              "resultTop": 1
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
