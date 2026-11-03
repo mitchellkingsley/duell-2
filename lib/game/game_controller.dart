@@ -8,6 +8,7 @@ import '../core/rules.dart';
 import '../core/serialization.dart';
 import '../core/setup.dart';
 import '../core/turn_link.dart';
+import 'local_game_store.dart';
 import 'match_store.dart';
 
 /// Outcome of applying an inbound turn link.
@@ -41,8 +42,14 @@ class TumbleAnim {
 /// This is the only stateful glue between the pure-Dart engine and the widgets.
 /// Remote mode (deep links) will later reuse the same engine calls here.
 class GameController extends ChangeNotifier {
-  GameController() {
-    newGame();
+  /// A local (pass-and-play) game. Pass [initial] to resume a saved game;
+  /// omit it to start fresh.
+  GameController({GameState? initial}) {
+    if (initial != null) {
+      _state = initial;
+    } else {
+      newGame();
+    }
   }
 
   /// A link-based (remote) game. [myPlayer] is the only side this device may
@@ -130,6 +137,7 @@ class GameController extends ChangeNotifier {
     _animating = null;
     _choiceDest = null;
     _hoverOption = null;
+    if (!isRemote) LocalGameStore.instance.clear();
     notifyListeners();
   }
 
@@ -242,9 +250,21 @@ class GameController extends ChangeNotifier {
         stateHash: stateHash(_state),
       ).encode();
       _persist();
+    } else {
+      _persistLocal();
     }
 
     notifyListeners();
+  }
+
+  /// Save (or, once finished, clear) the in-progress local game so it resumes
+  /// after backing out of the board.
+  void _persistLocal() {
+    if (_state.isOver) {
+      LocalGameStore.instance.clear();
+    } else {
+      LocalGameStore.instance.save(_state);
+    }
   }
 
   /// Apply a turn received over a link. Returns the outcome; on success the

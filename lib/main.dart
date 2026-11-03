@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import 'game/deep_links.dart';
+import 'game/local_game_store.dart';
 import 'game/match_store.dart';
 import 'game/settings.dart';
 import 'ui/home_screen.dart';
@@ -14,6 +15,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Settings.instance.load();
   await MatchStore.instance.init();
+  await LocalGameStore.instance.init();
 
   // The token the app was opened with, if any.
   String? initialToken;
@@ -69,9 +71,15 @@ class _DuellAppState extends State<DuellApp> {
     final base = ThemeData(
       brightness: Brightness.dark,
       colorSchemeSeed: const Color(0xFF4A90D9),
-      scaffoldBackgroundColor: const Color(0xFF15181D),
+      scaffoldBackgroundColor: const Color(0xFF000000),
       useMaterial3: true,
       fontFamily: 'JetBrainsMono',
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Color(0xFF000000),
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+      ),
     );
     final token = widget.initialToken;
     return MaterialApp(

@@ -56,7 +56,7 @@ class HomeScreen extends StatelessWidget {
                           icon: const Icon(Icons.people),
                           label: const Padding(
                             padding: EdgeInsets.symmetric(vertical: 14),
-                            child: Text('Local 2-Player (Pass & Play)'),
+                            child: Text('Pass & Play'),
                           ),
                         ),
                         const SizedBox(height: 12),

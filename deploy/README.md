@@ -1,60 +1,102 @@
-# Deploying link-based play
+# Deploying Duell to Cloudflare (decade.dev)
 
-Link-based (serverless) play works out of the box on **web** using the current
-page origin (`…/?t=<token>`). To make turn links open the **Android app**
-directly when tapped in a messaging app, you need a domain you own, verified as
-an Android App Link.
+The app is configured to serve link-based play from **https://decade.dev**:
 
-## 1. Pick a domain and point the app at it
+- `lib/game/deep_links.dart` → `kLinkDomain = 'https://decade.dev'`, so turn
+  links are `https://decade.dev/t?t=<token>`.
+- `android/app/src/main/AndroidManifest.xml` has the verified App Link
+  intent-filter for host `decade.dev`, path prefix `/t`.
 
-In [`lib/game/deep_links.dart`](../lib/game/deep_links.dart), set:
+Two deployable files live in `web/` and are bundled automatically by
+`flutter build web`:
 
-```dart
-const String? kLinkDomain = 'https://play.yourdomain.com';
-```
+- `web/_redirects` — Cloudflare Pages SPA fallback so `/t?t=…` routes load the
+  app.
+- `web/.well-known/assetlinks.json` — the Digital Asset Links file for Android
+  App Link verification (fill in your fingerprint; see step 4).
 
-Match the same host (and the `/t` path prefix) in the HTTPS `intent-filter` in
-[`android/app/src/main/AndroidManifest.xml`](../android/app/src/main/AndroidManifest.xml).
-Shared links then look like `https://play.yourdomain.com/t?t=<token>`.
-
-## 2. Host the Digital Asset Links file
-
-Serve [`assetlinks.json`](assetlinks.json) at exactly:
-
-```
-https://play.yourdomain.com/.well-known/assetlinks.json
-```
-
-over HTTPS, as `application/json`, with no redirects. Replace
-`REPLACE_WITH_YOUR_APP_SIGNING_CERT_SHA256` with your app signing certificate's
-SHA-256 fingerprint:
+## 1. Build the static site
 
 ```bash
-# Debug keystore:
-keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey \
-  -storepass android -keypass android | grep SHA256
-# Release / Play App Signing: copy the SHA-256 from Play Console → App signing.
+flutter build web --release
 ```
 
-Include every fingerprint that signs a build users install (debug, upload, and
-the Play-managed signing key).
+Output is in `build/web/` (index.html, assets, `_redirects`, and
+`.well-known/assetlinks.json`). The default base href is `/`, correct for the
+apex domain.
 
-## 3. Host a fallback web page
+## 2. Deploy to Cloudflare Pages
 
-Put the Flutter web build (or a lightweight install page) at the domain so that
-opponents **without** the app still see something useful when they open a link —
-the same `?t=`/`#t=` token handling already works there.
+**CLI (Wrangler):**
 
-## 4. Verify
+```bash
+# First deploy creates the Pages project named "duell":
+npx wrangler pages deploy build/web --project-name duell
+```
 
-- `adb shell pm verify-app-links --re-verify com.duell.duell`
-- `adb shell pm get-app-links com.duell.duell` (look for `verified`)
+(Log in when prompted: `npx wrangler login`.)
 
-### Testing without a domain
+**Or dashboard:** Cloudflare → Workers & Pages → Create → Pages → “Upload
+assets” → drag in the `build/web` folder.
 
-Use the custom scheme (not linkified by messaging apps, but fine for local
-testing):
+## 3. Point decade.dev at the Pages project
+
+Since `decade.dev` is already in your Cloudflare account:
+
+1. Open the Pages project → **Custom domains** → **Set up a custom domain**.
+2. Enter `decade.dev` (and optionally `www.decade.dev`). Cloudflare adds the
+   DNS record and provisions the TLS certificate automatically (required —
+   `.dev` is HSTS-preloaded, so it must be HTTPS).
+
+Verify:
+
+- `https://decade.dev/` loads the game.
+- `https://decade.dev/t?t=test` also loads it (SPA fallback working).
+- `https://decade.dev/.well-known/assetlinks.json` returns the JSON as
+  `application/json`.
+
+That is all that's needed for **web link play** to work end-to-end: two people
+open `https://decade.dev`, and turn links they share open the site with the
+move applied.
+
+## 4. (Android only) Finish App Link verification
+
+Needed only when you ship the Android app and want tapped links to open it
+directly instead of the browser.
+
+1. Get your app signing cert SHA-256 and paste it into
+   `web/.well-known/assetlinks.json` (replace the placeholder):
+
+   ```bash
+   # Debug keystore:
+   keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey \
+     -storepass android -keypass android | grep SHA256
+   # Release / Play App Signing: Play Console → your app → App signing →
+   # "App signing key certificate" SHA-256.
+   ```
+
+   Include every signing key users might have (debug, upload, and the
+   Play-managed key). Re-run `flutter build web` and redeploy so the updated
+   file is live.
+
+2. Verify on a device:
+
+   ```bash
+   adb shell pm verify-app-links --re-verify com.duell.duell
+   adb shell pm get-app-links com.duell.duell   # expect: verified
+   ```
+
+### Testing without the published app
+
+Fire the custom scheme via adb:
 
 ```bash
 adb shell am start -a android.intent.action.VIEW -d "duell://turn?t=<token>"
 ```
+
+## Note on local development
+
+Because `kLinkDomain` now points at `decade.dev`, links generated while running
+locally (`flutter run -d chrome`) also point at `decade.dev` — so test
+link-play on the deployed site. To test links against `localhost` again,
+temporarily set `kLinkDomain = null` in `lib/game/deep_links.dart`.

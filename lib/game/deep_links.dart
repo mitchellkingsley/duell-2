@@ -10,7 +10,8 @@ library;
 ///   (e.g. 'https://play.duell.example') so taps on another person's Android
 ///   device open the app directly. Must match the host/pathPrefix in
 ///   AndroidManifest.xml and the domain hosting assetlinks.json.
-const String? kLinkDomain = null;
+// ignore: unnecessary_nullable_for_final_variable_declarations
+const String? kLinkDomain = 'https://decade.dev'; // null => use the web origin
 
 /// Extract a turn token from an inbound URI, accepting it either as the `t`
 /// query parameter or after a `#t=` fragment.

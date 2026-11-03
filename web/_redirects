@@ -1,0 +1,4 @@
+# Cloudflare Pages SPA fallback: serve the app for client-side routes
+# (e.g. /t?t=<token> turn links). Real files (assets, .well-known) are
+# served directly and take precedence over this rule.
+/*    /index.html   200
