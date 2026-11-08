@@ -1,23 +1,22 @@
 import 'package:flutter/foundation.dart';
 
 import '../core/board.dart';
+import '../core/board_codec.dart';
 import '../core/die.dart';
 import '../core/geometry.dart';
 import '../core/move.dart';
 import '../core/rules.dart';
-import '../core/serialization.dart';
 import '../core/setup.dart';
-import '../core/turn_link.dart';
 import 'local_game_store.dart';
 import 'match_store.dart';
 
-/// Outcome of applying an inbound turn link.
+/// Outcome of applying an inbound board link.
 enum InboundResult {
   applied,
-  duplicate, // already applied (seq <= ours) — harmless
+  duplicate, // the received board equals ours (already applied)
   wrongGame, // link is for a different game
-  illegal, // the move is not legal from our state
-  desync, // out of sequence, or resulting hash disagrees
+  illegal, // the link is malformed / the board can't be read
+  desync, // the board isn't reachable from ours by one legal move
 }
 
 /// A move currently being animated (the die tumbling from origin to
@@ -242,13 +241,8 @@ class GameController extends ChangeNotifier {
 
     if (isRemote) {
       _seq += 1;
-      _outboundToken = TurnPayload(
-        gameId: _gameId!,
-        seq: _seq,
-        from: move.from,
-        path: move.path,
-        stateHash: stateHash(_state),
-      ).encode();
+      // Send the whole board (id + encoded board), not the move delta.
+      _outboundToken = BoardLink(id: _gameId!, board: encodeBoard(_state)).encode();
       _persist();
     } else {
       _persistLocal();
@@ -267,29 +261,35 @@ class GameController extends ChangeNotifier {
     }
   }
 
-  /// Apply a turn received over a link. Returns the outcome; on success the
-  /// opponent's move tumbles across the board and it becomes your turn.
-  InboundResult applyInbound(TurnPayload p) {
-    if (!isRemote || _gameId == null || p.gameId != _gameId) {
+  /// Apply a board received over a link [link]. The move is reconstructed by
+  /// diffing the received board against ours and confirming the transition is a
+  /// single legal move. On success the opponent's move tumbles across the board
+  /// and it becomes your turn.
+  InboundResult applyInbound(BoardLink link) {
+    if (!isRemote || _gameId == null || link.id != _gameId) {
       return InboundResult.wrongGame;
     }
-    if (p.seq <= _seq) return InboundResult.duplicate;
-    if (p.seq != _seq + 1) return InboundResult.desync;
 
-    final resolved = Rules.resolveMove(_state, p.from, p.path);
-    if (resolved == null) return InboundResult.illegal;
+    final Map<Position, BoardCell> target;
+    try {
+      target = decodeBoard(link.board);
+    } catch (_) {
+      return InboundResult.illegal;
+    }
 
-    final piece = _state.pieceAt(p.from)!;
-    final next = Rules.applyMove(_state, resolved);
-    if (stateHash(next) != p.stateHash) return InboundResult.desync;
+    if (_isCurrentBoard(target)) return InboundResult.duplicate;
 
-    _state = next;
-    _seq = p.seq;
-    _lastMove = resolved;
+    final move = Rules.resolveToTarget(_state, target);
+    if (move == null) return InboundResult.desync;
+
+    final piece = _state.pieceAt(move.from)!;
+    _state = Rules.applyMove(_state, move);
+    _seq += 1;
+    _lastMove = move;
     _outboundToken = null;
     _clearSelection();
     _animating = TumbleAnim(
-      move: resolved,
+      move: move,
       startDie: piece.die,
       owner: piece.owner,
       isKing: piece.isKing,
@@ -297,6 +297,22 @@ class GameController extends ChangeNotifier {
     _persist();
     notifyListeners();
     return InboundResult.applied;
+  }
+
+  /// Whether [target] already equals our current board (a duplicate link).
+  bool _isCurrentBoard(Map<Position, BoardCell> target) {
+    if (target.length != _state.pieces.length) return false;
+    for (final e in _state.pieces.entries) {
+      final c = target[e.key];
+      final p = e.value;
+      if (c == null ||
+          c.team != p.owner ||
+          c.isKing != p.isKing ||
+          (!p.isKing && c.die != p.die)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   void _persist() {

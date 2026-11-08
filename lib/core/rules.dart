@@ -1,4 +1,5 @@
 import 'board.dart';
+import 'board_codec.dart';
 import 'geometry.dart';
 import 'move.dart';
 
@@ -117,25 +118,63 @@ class Rules {
     return resolved.to == move.to && resolved.resultDie == move.resultDie;
   }
 
-  /// Resolve a path (origin + segments) into a fully-realized legal [Move], or
-  /// null if it is not legal from [state]. Used to reconstruct and validate a
-  /// move received over a link, where only the origin and path are transmitted.
-  static Move? resolveMove(
-      GameState state, Position from, List<MoveSegment> path) {
-    if (state.isOver) return null;
-    final piece = state.pieceAt(from);
-    if (piece == null || piece.owner != state.currentPlayer) return null;
+  /// Given [current] and a received [target] board, find the single legal move
+  /// by the player to move that transforms [current] into [target], or null if
+  /// no such move exists (illegal, out of sequence, or no change).
+  ///
+  /// Used for link play, where the whole board is transmitted: we diff to find
+  /// the moved die (and a captured die), then confirm the transition is a real
+  /// legal move whose tumble yields the stated orientation — so the receiver's
+  /// engine stays the referee even though only the board was sent.
+  static Move? resolveToTarget(
+      GameState current, Map<Position, BoardCell> target) {
+    if (current.isOver) return null;
+    final mover = current.currentPlayer;
 
-    final n = stepsFor(piece);
-    final total = path.fold<int>(0, (a, s) => a + s.count);
-    if (total != n) return null;
-    if (path.isEmpty || path.length > 2) return null;
-    if (path.length == 2) {
-      final a = path[0].direction, b = path[1].direction;
-      if (b == a || b == a.opposite) return null;
+    final fromMover = <Position>[]; // mover squares that emptied/changed
+    final fromOther = <Position>[]; // opponent squares removed (capture)
+    final toMover = <Position>[]; // squares now holding the mover
+
+    final squares = {...current.pieces.keys, ...target.keys};
+    for (final pos in squares) {
+      final pc = current.pieceAt(pos);
+      final tc = target[pos];
+      if (pc == null && tc == null) continue;
+      if (pc != null && tc != null && _cellMatches(pc, tc)) continue;
+      if (pc != null) (pc.owner == mover ? fromMover : fromOther).add(pos);
+      if (tc != null) {
+        if (tc.team != mover) return null; // only the mover may appear/change
+        toMover.add(pos);
+      }
     }
-    return _walk(state, from, piece, path);
+
+    if (fromMover.length != 1 || toMover.length != 1) return null;
+    final from = fromMover.first;
+    final to = toMover.first;
+    if (fromOther.length > 1) return null;
+    if (fromOther.length == 1 && fromOther.first != to) return null;
+
+    final tc = target[to]!;
+    final moved = current.pieceAt(from)!;
+    final capturing = current.pieceAt(to)?.owner == 1 - mover;
+
+    for (final m in reachableMoves(current, from)) {
+      if (m.to != to) continue;
+      if (m.capturesOpponent != capturing) continue;
+      if (moved.isKing) {
+        if (!tc.isKing) continue;
+      } else {
+        if (tc.isKing || tc.die != m.resultDie) continue;
+      }
+      return m;
+    }
+    return null;
   }
+
+  static bool _cellMatches(Piece p, BoardCell c) =>
+      p.owner == c.team &&
+      p.isKing == c.isKing &&
+      (c.isKing || p.die == c.die);
 
   /// Apply [move], returning the next [GameState]. Assumes [move] is legal
   /// (as produced by [reachableMoves] or checked with [isLegal]).
