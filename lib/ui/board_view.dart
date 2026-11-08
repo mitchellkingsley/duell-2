@@ -62,6 +62,9 @@ class _BoardViewState extends State<BoardView>
               animation: controller,
               builder: (context, _) {
                 final anim = controller.animating;
+                // Computed once per rebuild, not per cell.
+                final threats = controller.threatenedSquares;
+                final threatSource = controller.threatSource;
                 return Stack(
                   children: [
                     Column(
@@ -77,6 +80,10 @@ class _BoardViewState extends State<BoardView>
                                       pos: Position(col, row),
                                       kingIcon: widget.kingIcon,
                                       pulse: _pulse,
+                                      threatened: threats
+                                          .contains(Position(col, row)),
+                                      isThreatSource: threatSource ==
+                                          Position(col, row),
                                     ),
                                   ),
                               ],
@@ -235,12 +242,16 @@ class _Cell extends StatelessWidget {
     required this.pos,
     required this.kingIcon,
     required this.pulse,
+    required this.threatened,
+    required this.isThreatSource,
   });
 
   final GameController controller;
   final Position pos;
   final IconData kingIcon;
   final Animation<double> pulse;
+  final bool threatened;
+  final bool isThreatSource;
 
   @override
   Widget build(BuildContext context) {
@@ -269,6 +280,8 @@ class _Cell extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             Container(color: bg),
+            if (threatened)
+              Container(color: Colors.red.withValues(alpha: 0.32)),
             if (onRoute)
               Container(color: teamColor.withValues(alpha: 0.30)),
             if (isSelected)
@@ -286,6 +299,12 @@ class _Cell extends StatelessWidget {
                   color: kPlayerColors[piece.owner],
                   isKing: piece.isKing,
                   kingIcon: piece.isKing ? kingIcon : null,
+                ),
+              ),
+            if (isThreatSource)
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.redAccent, width: 3),
                 ),
               ),
             if (isDestination)

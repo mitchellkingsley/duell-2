@@ -138,6 +138,27 @@ void main() {
     });
   });
 
+  group('threats', () {
+    test('movesIgnoringTurn works for the player NOT to move', () {
+      final s = initialGameState(); // South to move
+      final northDie = s.piecesOf(1).first.key; // a North piece
+      expect(Rules.reachableMoves(s, northDie), isEmpty); // not their turn
+      expect(Rules.movesIgnoringTurn(s, northDie), isNotEmpty); // but it threatens
+    });
+
+    test('threatenedBy marks a square an opponent die can reach', () {
+      // A lone North die (top=3) at (3,1) threatens three squares south.
+      final pieces = <Position, Piece>{
+        const Position(3, 1):
+            Piece(owner: 1, die: Die.withTopSouth(3, 2)!, isKing: false),
+      };
+      final s = GameState(pieces: pieces, currentPlayer: 0, turnNumber: 0);
+      final threats = Rules.threatenedBy(s, 1);
+      expect(threats.contains(const Position(3, 4)), isTrue); // straight south 3
+      expect(threats.contains(const Position(3, 1)), isFalse); // its own square
+    });
+  });
+
   group('isLegal (remote-link validation)', () {
     test('accepts engine-produced moves and rejects tampered ones', () {
       final s = initialGameState();

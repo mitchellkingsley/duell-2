@@ -137,6 +137,35 @@ class GameController extends ChangeNotifier {
   Move? get hoveredOption => _hoverOption;
   List<Position> get highlightedRoute => _hoverOption?.routeCells() ?? const [];
 
+  /// An opponent die the player tapped to inspect its threats, or null.
+  Position? _threatSource;
+  Position? get threatSource => _threatSource;
+
+  /// "Danger" toggle: highlight every square the opponent threatens.
+  bool _dangerMode = false;
+  bool get dangerMode => _dangerMode;
+
+  /// This device's side: your player in link play, else the player to move.
+  int get _mySide => isRemote ? _myPlayer! : _state.currentPlayer;
+
+  /// Squares under threat to display: the tapped opponent die's reachable
+  /// squares, plus (when danger mode is on) all opponent-threatened squares.
+  Set<Position> get threatenedSquares {
+    final out = <Position>{};
+    if (_threatSource != null) {
+      for (final m in Rules.movesIgnoringTurn(_state, _threatSource!)) {
+        out.add(m.to);
+      }
+    }
+    if (_dangerMode) out.addAll(Rules.threatenedBy(_state, 1 - _mySide));
+    return out;
+  }
+
+  void toggleDanger() {
+    _dangerMode = !_dangerMode;
+    notifyListeners();
+  }
+
   /// The move just played (most recent). Handy for a status line.
   Move? _lastMove;
   Move? get lastMove => _lastMove;
@@ -166,6 +195,7 @@ class GameController extends ChangeNotifier {
     _animating = null;
     _choiceDest = null;
     _hoverOption = null;
+    _threatSource = null;
     _history.clear();
     if (!isRemote) LocalGameStore.instance.clear();
     notifyListeners();
@@ -248,9 +278,9 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Handle a tap on [p]: select own piece, commit a move onto a highlighted
-  /// destination, open the route chooser if that square has two routes, or
-  /// clear the selection.
+  /// Handle a tap on [p]: inspect an opponent die's threats, select your own
+  /// piece, commit a move onto a highlighted destination, open the route
+  /// chooser, or clear the selection.
   void tap(Position p) {
     if (_state.isOver || isAnimating) return;
 
@@ -260,6 +290,7 @@ class GameController extends ChangeNotifier {
       return;
     }
 
+    // Committing a move onto a highlighted destination takes priority.
     if (_selected != null && _movesByDest.containsKey(p)) {
       final options = _movesByDest[p]!;
       if (options.length == 1) {
@@ -269,6 +300,17 @@ class GameController extends ChangeNotifier {
         _hoverOption = null;
         notifyListeners();
       }
+      return;
+    }
+
+    // Tapping an opponent die toggles a view of the squares it threatens.
+    final piece = _state.pieceAt(p);
+    if (piece != null && piece.owner != _mySide) {
+      _selected = null;
+      _movesByDest = {};
+      _previewDest = null;
+      _threatSource = (_threatSource == p) ? null : p;
+      notifyListeners();
       return;
     }
 
@@ -418,5 +460,6 @@ class GameController extends ChangeNotifier {
     _previewDest = null;
     _choiceDest = null;
     _hoverOption = null;
+    _threatSource = null;
   }
 }

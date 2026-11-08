@@ -57,6 +57,19 @@ class _GameScreenState extends State<GameScreen> {
           AnimatedBuilder(
             animation: controller,
             builder: (context, _) => IconButton(
+              tooltip: controller.dangerMode
+                  ? 'Hide opponent threats'
+                  : 'Show opponent threats',
+              isSelected: controller.dangerMode,
+              icon: const Icon(Icons.warning_amber_outlined),
+              selectedIcon: const Icon(Icons.warning_amber,
+                  color: Colors.redAccent),
+              onPressed: controller.toggleDanger,
+            ),
+          ),
+          AnimatedBuilder(
+            animation: controller,
+            builder: (context, _) => IconButton(
               tooltip: 'Undo last move',
               icon: const Icon(Icons.undo),
               onPressed: controller.canUndo ? controller.undo : null,

@@ -11,7 +11,7 @@ class Rules {
   /// always moves exactly one square.
   static int stepsFor(Piece piece) => piece.isKing ? 1 : piece.die.top;
 
-  /// Every legal move for the piece at [from].
+  /// Every legal move for the piece at [from], for the player to move.
   ///
   /// Returns an empty list if there is no piece there, it is not that player's
   /// turn, or the game is over. Squares reachable by two different paths yield
@@ -20,6 +20,15 @@ class Rules {
     if (state.isOver) return const [];
     final piece = state.pieceAt(from);
     if (piece == null || piece.owner != state.currentPlayer) return const [];
+    return movesIgnoringTurn(state, from);
+  }
+
+  /// Every move the piece at [from] could make on the current board, regardless
+  /// of whose turn it is. Used to compute the squares an opponent piece
+  /// threatens (where it could move or capture).
+  static List<Move> movesIgnoringTurn(GameState state, Position from) {
+    final piece = state.pieceAt(from);
+    if (piece == null) return const [];
 
     final n = stepsFor(piece);
     final moves = <Move>[];
@@ -48,6 +57,18 @@ class Rules {
     }
 
     return moves;
+  }
+
+  /// All squares threatened by [player]'s pieces on the current board — i.e.
+  /// every square one of their pieces could move to (and thus capture on).
+  static Set<Position> threatenedBy(GameState state, int player) {
+    final out = <Position>{};
+    for (final e in state.piecesOf(player)) {
+      for (final m in movesIgnoringTurn(state, e.key)) {
+        out.add(m.to);
+      }
+    }
+    return out;
   }
 
   /// Walk a path square by square, enforcing: stay on board, no jumping over or
