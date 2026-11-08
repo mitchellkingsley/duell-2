@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import 'game/deep_links.dart';
+import 'game/launch_handler.dart';
 import 'game/local_game_store.dart';
 import 'game/match_store.dart';
 import 'game/settings.dart';
@@ -43,21 +44,32 @@ class DuellApp extends StatefulWidget {
 class _DuellAppState extends State<DuellApp> {
   final _navKey = GlobalKey<NavigatorState>();
   StreamSubscription<Uri>? _linkSub;
+  String? _lastToken;
 
   @override
   void initState() {
     super.initState();
-    // Warm deep links (app already running) on Android.
-    if (!kIsWeb) {
+    _lastToken = widget.initialToken;
+    if (kIsWeb) {
+      // Installed PWA re-launched (e.g. a turn link tapped while it's already
+      // open): focus-existing hands us the new link instead of a new window.
+      listenLaunches(_handleIncoming);
+    } else {
+      // Warm deep links (app already running) on Android.
       _linkSub = AppLinks().uriLinkStream.listen((uri) {
         final token = tokenFromUri(uri);
-        if (token != null && token.isNotEmpty) {
-          _navKey.currentState?.push(
-            MaterialPageRoute(builder: (_) => InboundLauncher(token: token)),
-          );
-        }
+        if (token != null && token.isNotEmpty) _handleIncoming(token);
       }, onError: (_) {});
     }
+  }
+
+  void _handleIncoming(String token) {
+    // Ignore the token the app launched with (already handled at startup).
+    if (token == _lastToken) return;
+    _lastToken = token;
+    _navKey.currentState?.push(
+      MaterialPageRoute(builder: (_) => InboundLauncher(token: token)),
+    );
   }
 
   @override

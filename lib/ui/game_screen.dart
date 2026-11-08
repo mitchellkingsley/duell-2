@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../core/board.dart';
+import '../core/board_codec.dart';
 import '../core/geometry.dart';
-import '../core/turn_link.dart';
 import '../game/deep_links.dart';
 import '../game/game_controller.dart';
 import '../game/local_game_store.dart';
 import '../game/settings.dart';
+import '../game/web_share.dart';
 import 'board_view.dart';
 
 const List<String> kPlayerNames = ['Blue', 'Red'];
@@ -272,9 +273,9 @@ class _LinkBar extends StatelessWidget {
         children: [
           if (!over && token != null)
             FilledButton.icon(
-              onPressed: () => _copy(context, token),
-              icon: const Icon(Icons.copy, size: 18),
-              label: const Text('Copy link'),
+              onPressed: () => _share(context, token),
+              icon: const Icon(Icons.ios_share, size: 18),
+              label: const Text('Share'),
             ),
           if (!over) const SizedBox(width: 8),
           if (!over)
@@ -288,12 +289,16 @@ class _LinkBar extends StatelessWidget {
     );
   }
 
-  Future<void> _copy(BuildContext context, String token) async {
+  /// Open the native share sheet (Web Share API on the web); if unavailable,
+  /// fall back to copying the link to the clipboard.
+  Future<void> _share(BuildContext context, String token) async {
     final link = buildTurnLink(token, webOrigin: Uri.base.origin);
-    await Clipboard.setData(ClipboardData(text: link));
-    if (context.mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Link copied')));
+    final messenger = ScaffoldMessenger.of(context);
+    final outcome =
+        await shareLink(text: 'My Duell move', url: link);
+    if (outcome == ShareOutcome.unsupported) {
+      await Clipboard.setData(ClipboardData(text: link));
+      messenger.showSnackBar(const SnackBar(content: Text('Link copied')));
     }
   }
 
@@ -325,19 +330,17 @@ class _LinkBar extends StatelessWidget {
     );
     if (result != true) return;
 
-    final raw = field.text.trim();
-    final payload =
-        TurnPayload.decode(Uri.tryParse(raw)?.queryParameters['t'] ?? raw);
+    final link = BoardLink.decode(field.text);
     String? msg;
-    if (payload == null) {
+    if (link == null) {
       msg = 'Not a valid link.';
-    } else if (payload.gameId != controller.gameId) {
+    } else if (link.id != controller.gameId) {
       msg = 'That link is for a different game.';
     } else {
-      msg = switch (controller.applyInbound(payload)) {
+      msg = switch (controller.applyInbound(link)) {
         InboundResult.applied => null,
         InboundResult.duplicate => 'Already applied.',
-        InboundResult.illegal => 'That move isn’t legal here.',
+        InboundResult.illegal => 'That link is malformed.',
         InboundResult.desync => 'Out of sync — a turn may be missing.',
         InboundResult.wrongGame => 'Different game.',
       };

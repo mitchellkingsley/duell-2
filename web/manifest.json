@@ -1,11 +1,12 @@
 {
-    "name": "duell",
-    "short_name": "duell",
+    "name": "Duell",
+    "short_name": "Duell",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "launch_handler": { "client_mode": "focus-existing" },
+    "background_color": "#000000",
+    "theme_color": "#000000",
+    "description": "Duell — the strategy game of dice.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
