@@ -36,6 +36,16 @@ class TumbleAnim {
   final bool isKing;
 }
 
+/// A point-in-time snapshot used to undo a move: the state *before* [move] was
+/// applied, so undo can restore it and tumble [move] in reverse.
+class _Snapshot {
+  const _Snapshot(this.state, this.seq, this.outboundToken, this.move);
+  final GameState state;
+  final int seq;
+  final String? outboundToken;
+  final Move move;
+}
+
 /// Drives local (pass-and-play) games and exposes UI selection/preview state.
 ///
 /// This is the only stateful glue between the pure-Dart engine and the widgets.
@@ -87,6 +97,21 @@ class GameController extends ChangeNotifier {
   bool get isMyTurn =>
       !isRemote || (!_state.isOver && _state.currentPlayer == _myPlayer);
 
+  /// Snapshots taken before each applied move, for undo.
+  final List<_Snapshot> _history = [];
+
+  /// Whether the last move can be taken back.
+  ///
+  /// Local: any time there's history and nothing is mid-animation/choosing.
+  /// Remote: only your own just-made move, before the opponent's reply has been
+  /// applied (while an outbound token is still pending) — otherwise you'd be
+  /// undoing a move the opponent has already received.
+  bool get canUndo {
+    if (_history.isEmpty || isAnimating || isChoosing) return false;
+    if (isRemote) return _outboundToken != null;
+    return true;
+  }
+
   Position? _selected;
   Position? get selected => _selected;
 
@@ -121,6 +146,11 @@ class GameController extends ChangeNotifier {
   TumbleAnim? get animating => _animating;
   bool get isAnimating => _animating != null;
 
+  /// Bumped whenever a new tumble starts, so the board can key a fresh
+  /// animation widget (forward moves and reverse undos alike).
+  int _animId = 0;
+  int get animationId => _animId;
+
   bool get isOver => _state.isOver;
 
   /// The player whose side should glow: the mover while a tumble is in flight
@@ -136,7 +166,50 @@ class GameController extends ChangeNotifier {
     _animating = null;
     _choiceDest = null;
     _hoverOption = null;
+    _history.clear();
     if (!isRemote) LocalGameStore.instance.clear();
+    notifyListeners();
+  }
+
+  /// Take back the last move (see [canUndo]), tumbling the die back along the
+  /// reversed path to its origin.
+  void undo() {
+    if (!canUndo) return;
+    final snap = _history.removeLast();
+    final undone = snap.move;
+    final movedPiece = snap.state.pieceAt(undone.from)!; // pre-move orientation
+
+    _state = snap.state;
+    _seq = snap.seq;
+    _outboundToken = snap.outboundToken;
+    _lastMove = _history.isEmpty ? null : _history.last.move;
+    _clearSelection();
+
+    // Reverse tumble: start where the die now sits (undone.to, its result
+    // orientation) and roll back along the reversed path to undone.from.
+    final reverse = Move(
+      from: undone.to,
+      to: undone.from,
+      path: [
+        for (final s in undone.path.reversed)
+          MoveSegment(s.direction.opposite, s.count),
+      ],
+      resultDie: movedPiece.die,
+      capturesOpponent: false,
+    );
+    _animating = TumbleAnim(
+      move: reverse,
+      startDie: undone.resultDie,
+      owner: movedPiece.owner,
+      isKing: movedPiece.isKing,
+    );
+    _animId++;
+
+    if (isRemote) {
+      _persist();
+    } else {
+      _persistLocal();
+    }
     notifyListeners();
   }
 
@@ -227,6 +300,7 @@ class GameController extends ChangeNotifier {
   /// passes immediately; the glowing banner (not a confirmation) shows whose it
   /// is once the tumble settles.
   void commit(Move move) {
+    _history.add(_Snapshot(_state, _seq, _outboundToken, move));
     final piece = _state.pieceAt(move.from)!;
     final anim = TumbleAnim(
       move: move,
@@ -238,6 +312,7 @@ class GameController extends ChangeNotifier {
     _lastMove = move;
     _clearSelection();
     _animating = anim;
+    _animId++;
 
     if (isRemote) {
       _seq += 1;
@@ -282,6 +357,7 @@ class GameController extends ChangeNotifier {
     final move = Rules.resolveToTarget(_state, target);
     if (move == null) return InboundResult.desync;
 
+    _history.add(_Snapshot(_state, _seq, _outboundToken, move));
     final piece = _state.pieceAt(move.from)!;
     _state = Rules.applyMove(_state, move);
     _seq += 1;
@@ -294,6 +370,7 @@ class GameController extends ChangeNotifier {
       owner: piece.owner,
       isKing: piece.isKing,
     );
+    _animId++;
     _persist();
     notifyListeners();
     return InboundResult.applied;

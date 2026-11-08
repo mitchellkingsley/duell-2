@@ -54,6 +54,14 @@ class _GameScreenState extends State<GameScreen> {
     return Scaffold(
       appBar: AppBar(
         actions: [
+          AnimatedBuilder(
+            animation: controller,
+            builder: (context, _) => IconButton(
+              tooltip: 'Undo last move',
+              icon: const Icon(Icons.undo),
+              onPressed: controller.canUndo ? controller.undo : null,
+            ),
+          ),
           if (!remote)
             IconButton(
               tooltip: 'New game',

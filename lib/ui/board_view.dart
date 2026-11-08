@@ -86,7 +86,7 @@ class _BoardViewState extends State<BoardView>
                     ),
                     if (anim != null)
                       TumblingDie(
-                        key: ValueKey(controller.state.turnNumber),
+                        key: ValueKey(controller.animationId),
                         anim: anim,
                         cellSize: cell,
                         color: kPlayerColors[anim.owner],
