@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
+import 'app_info.dart';
 import 'game/deep_links.dart';
 import 'game/launch_handler.dart';
 import 'game/local_game_store.dart';
@@ -17,6 +19,12 @@ Future<void> main() async {
   await Settings.instance.load();
   await MatchStore.instance.init();
   await LocalGameStore.instance.init();
+  try {
+    final info = await PackageInfo.fromPlatform();
+    appVersion = 'v${info.version}';
+  } catch (_) {
+    // Leave appVersion empty if unavailable.
+  }
 
   // The token the app was opened with, if any.
   String? initialToken;

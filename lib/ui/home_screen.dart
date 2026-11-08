@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../app_info.dart';
 import '../game/settings.dart';
 import 'board_view.dart' show kPlayerColors;
 import 'game_screen.dart';
@@ -26,6 +27,18 @@ class HomeScreen extends StatelessWidget {
                   onPressed: () => _showOptions(context),
                 ),
               ),
+              if (appVersion.isNotEmpty)
+                Positioned(
+                  bottom: 12,
+                  left: 0,
+                  right: 0,
+                  child: Text(
+                    appVersion,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                        color: Colors.white38, fontSize: 12),
+                  ),
+                ),
               Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 420),

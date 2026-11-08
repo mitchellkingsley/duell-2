@@ -9,18 +9,16 @@ import 'geometry.dart';
 /// only one square per turn, and capturing the opponent's King wins the game.
 ///
 /// With 4 on the inward face, a die's top can only be 1, 2, 5, or 6 (3 is
-/// forced onto the outward face, and 4 is used). The exact top-face sequence in
-/// the original box art is hard to read from the perspective drawing and is not
-/// essential to a legal game, so [kHomeRowTops] below is a documented,
-/// easily-adjustable placeholder — all values are valid for a 4-inward die.
+/// forced onto the outward face, and 4 is used).
 ///
 /// Coordinates: column 0 = WEST, column 8 = EAST; row 0 = NORTH edge,
 /// row 8 = SOUTH edge. Player 0 (South) occupies row 8, player 1 (North) row 0.
 
-/// Top faces for a home row, columns 0..8 (west to east). Palindromic so the
-/// row is left-right symmetric. Every entry must be in {1, 2, 5, 6} (the only
-/// tops possible with 4 inward).
-const List<int> kHomeRowTops = [2, 1, 5, 6, 1, 6, 5, 1, 2];
+/// Top faces for a home row, columns 0..8 (west to east): 5, 1, 2, 6, King,
+/// 6, 2, 1, 5. The center (col 4) is the King, whose top is a placeholder — it
+/// renders as an icon and moves one square regardless of orientation. Every
+/// entry must be in {1, 2, 5, 6} (the only tops possible with 4 inward).
+const List<int> kHomeRowTops = [5, 1, 2, 6, 1, 6, 2, 1, 5];
 
 /// The King's column: the center of the 9-wide home row.
 const int kKingCol = 4;
