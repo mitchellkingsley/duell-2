@@ -131,6 +131,46 @@ Map<Position, BoardCell> decodeBoard(String board) {
   return out;
 }
 
+/// Build a [GameState] directly from decoded cells, to open a game received
+/// for the first time (a game id not yet on this device) at exactly that board.
+///
+/// The King's orientation isn't transmitted, so it's given a placeholder (it's
+/// irrelevant to play — the King always moves one square). The winner is
+/// inferred from a missing King.
+GameState adoptBoard(Map<Position, BoardCell> cells,
+    {required int currentPlayer}) {
+  final pieces = <Position, Piece>{};
+  var homeKing = false;
+  var awayKing = false;
+  for (final e in cells.entries) {
+    final c = e.value;
+    if (c.isKing) {
+      if (c.team == 0) {
+        homeKing = true;
+      } else {
+        awayKing = true;
+      }
+    }
+    pieces[e.key] = Piece(
+      owner: c.team,
+      die: c.die ?? Die.anchor, // King orientation is irrelevant
+      isKing: c.isKing,
+    );
+  }
+  int? winner;
+  if (homeKing && !awayKing) {
+    winner = 0;
+  } else if (awayKing && !homeKing) {
+    winner = 1;
+  }
+  return GameState(
+    pieces: pieces,
+    currentPlayer: currentPlayer,
+    turnNumber: 0,
+    winner: winner,
+  );
+}
+
 /// A turn link: a 4-char game id plus the encoded board.
 class BoardLink {
   const BoardLink({required this.id, required this.board});

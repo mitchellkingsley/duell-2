@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/board_codec.dart';
+import '../core/geometry.dart';
 import '../core/setup.dart';
 import '../game/game_controller.dart';
 import '../game/match_store.dart';
@@ -15,42 +16,50 @@ import 'game_screen.dart';
   if (link == null) return (controller: null, error: 'Not a valid game link.');
 
   final saved = MatchStore.instance.load(link.id);
-  final GameController c;
   if (saved != null) {
-    c = GameController.remote(
+    // Known game: validate the move against our board and apply it.
+    final c = GameController.remote(
       gameId: saved.gameId,
       myPlayer: saved.myPlayer,
       state: saved.state,
       seq: saved.seq,
     );
-  } else {
-    // Joining a new game: the creator is Blue (player 0), so the joiner is Red.
-    // The first board must be reachable by one legal move from the opening
-    // position, otherwise the game can't be joined mid-play (handled below).
-    c = GameController.remote(
-      gameId: link.id,
-      myPlayer: 1,
-      state: initialGameState(),
-      seq: 0,
-    );
+    switch (c.applyInbound(link)) {
+      case InboundResult.applied:
+      case InboundResult.duplicate:
+        return (controller: c, error: null);
+      case InboundResult.wrongGame:
+        return (controller: null, error: 'Link is for a different game.');
+      case InboundResult.illegal:
+        return (controller: null, error: 'That link is malformed.');
+      case InboundResult.desync:
+        return (controller: null, error: 'The games are out of sync.');
+    }
   }
 
-  switch (c.applyInbound(link)) {
-    case InboundResult.applied:
-    case InboundResult.duplicate:
-      return (controller: c, error: null);
-    case InboundResult.wrongGame:
-      return (controller: null, error: 'Link is for a different game.');
-    case InboundResult.illegal:
-      return (controller: null, error: 'That link is malformed.');
-    case InboundResult.desync:
-      return (
-        controller: null,
-        error: saved == null
-            ? 'Can’t join this game mid-play.'
-            : 'The games are out of sync.'
-      );
+  // Unknown game: open it at the received board. The sender just moved, so it's
+  // your turn, and by convention the joiner is Red (the creator is Blue).
+  final Map<Position, BoardCell> cells;
+  try {
+    cells = decodeBoard(link.board);
+  } catch (_) {
+    return (controller: null, error: 'That link is malformed.');
   }
+  final state = adoptBoard(cells, currentPlayer: 1);
+  final c = GameController.remote(
+    gameId: link.id,
+    myPlayer: 1,
+    state: state,
+    seq: 0,
+  );
+  MatchStore.instance.save(SavedMatch(
+    gameId: link.id,
+    state: state,
+    seq: 0,
+    myPlayer: 1,
+    updatedAt: DateTime.now(),
+  ));
+  return (controller: c, error: null);
 }
 
 /// Entry screen for link-based play: start, resume, or paste a link.

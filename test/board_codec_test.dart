@@ -89,6 +89,19 @@ void main() {
     });
   });
 
+  test('adoptBoard reconstructs the position for a fresh join', () {
+    final s = initialGameState();
+    // Advance a couple of moves so it's a mid-game board.
+    final m1 = Rules.reachableMoves(s, const Position(0, kSouthHomeRow)).first;
+    final s1 = Rules.applyMove(s, m1);
+    final adopted =
+        adoptBoard(decodeBoard(encodeBoard(s1)), currentPlayer: 1);
+    // Same pieces/positions/orientations, and it's the joiner's (Red) turn.
+    expect(encodeBoard(adopted), encodeBoard(s1));
+    expect(adopted.currentPlayer, 1);
+    expect(adopted.winner, isNull);
+  });
+
   group('resolveToTarget (board → move)', () {
     test('reconstructs an opening move from the board', () {
       final s0 = initialGameState();
