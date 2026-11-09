@@ -28,12 +28,17 @@ class TumbleAnim {
     required this.startDie,
     required this.owner,
     required this.isKing,
+    this.captured,
   });
 
   final Move move;
   final Die startDie;
   final int owner;
   final bool isKing;
+
+  /// The piece being captured by this move (at [move].to), if any — rendered
+  /// fading out as the mover tumbles onto it.
+  final Piece? captured;
 }
 
 /// A point-in-time snapshot used to undo a move: the state *before* [move] was
@@ -365,6 +370,7 @@ class GameController extends ChangeNotifier {
       startDie: piece.die,
       owner: piece.owner,
       isKing: piece.isKing,
+      captured: move.capturesOpponent ? _state.pieceAt(move.to) : null,
     );
     _state = Rules.applyMove(_state, move);
     _lastMove = move;
@@ -417,6 +423,7 @@ class GameController extends ChangeNotifier {
 
     _history.add(_Snapshot(_state, _seq, _outboundToken, move));
     final piece = _state.pieceAt(move.from)!;
+    final captured = move.capturesOpponent ? _state.pieceAt(move.to) : null;
     _state = Rules.applyMove(_state, move);
     _seq += 1;
     _lastMove = move;
@@ -427,6 +434,7 @@ class GameController extends ChangeNotifier {
       startDie: piece.die,
       owner: piece.owner,
       isKing: piece.isKing,
+      captured: captured,
     );
     _animId++;
     _persist();

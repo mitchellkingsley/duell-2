@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/board.dart';
 import '../core/geometry.dart';
 import '../core/move.dart';
 import '../game/game_controller.dart';
@@ -93,6 +94,18 @@ class _BoardViewState extends State<BoardView>
                           ),
                       ],
                     ),
+                    if (anim != null && anim.captured != null)
+                      _CaptureFade(
+                        key: ValueKey('cap${controller.animationId}'),
+                        captured: anim.captured!,
+                        kingIcon: widget.kingIcon,
+                        cellSize: cell,
+                        left: anim.move.to.col * cell,
+                        top: anim.move.to.row * cell,
+                        durationMs:
+                            anim.move.path.fold<int>(0, (a, s) => a + s.count) *
+                                150,
+                      ),
                     if (anim != null)
                       TumblingDie(
                         key: ValueKey(controller.animationId),
@@ -499,4 +512,73 @@ class _DestPainter extends CustomPainter {
       old.placed.length != placed.length ||
       (placed.isNotEmpty && old.placed.first.value != placed.first.value) ||
       (placed.length > 1 && old.placed[1].value != placed[1].value);
+}
+
+/// The captured piece, rendered at its square fading and shrinking out as the
+/// capturing die tumbles onto it (over the same duration as the tumble).
+class _CaptureFade extends StatefulWidget {
+  const _CaptureFade({
+    super.key,
+    required this.captured,
+    required this.kingIcon,
+    required this.cellSize,
+    required this.left,
+    required this.top,
+    required this.durationMs,
+  });
+
+  final Piece captured;
+  final IconData kingIcon;
+  final double cellSize;
+  final double left;
+  final double top;
+  final int durationMs;
+
+  @override
+  State<_CaptureFade> createState() => _CaptureFadeState();
+}
+
+class _CaptureFadeState extends State<_CaptureFade>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: Duration(milliseconds: widget.durationMs.clamp(120, 2000)),
+  )..forward();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = widget.captured;
+    return Positioned(
+      left: widget.left,
+      top: widget.top,
+      width: widget.cellSize,
+      height: widget.cellSize,
+      child: AnimatedBuilder(
+        animation: _c,
+        builder: (context, child) {
+          // Linger, then fade+shrink out over the back half of the tumble.
+          final fade = (1 - (_c.value - 0.4) / 0.6).clamp(0.0, 1.0);
+          return Opacity(
+            opacity: fade,
+            child: Transform.scale(scale: 0.55 + 0.45 * fade, child: child),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(3),
+          child: Cube3D(
+            die: p.die,
+            color: kPlayerColors[p.owner],
+            isKing: p.isKing,
+            kingIcon: p.isKing ? widget.kingIcon : null,
+          ),
+        ),
+      ),
+    );
+  }
 }
