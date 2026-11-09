@@ -69,6 +69,17 @@ class _DuellAppState extends State<DuellApp> {
         if (token != null && token.isNotEmpty) _handleIncoming(token);
       }, onError: (_) {});
     }
+
+    // Opened cold via a link: push the game on top of the home screen so the
+    // app bar's back button returns to the menu.
+    final launchToken = widget.initialToken;
+    if (launchToken != null && launchToken.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _navKey.currentState?.push(
+          MaterialPageRoute(builder: (_) => InboundLauncher(token: launchToken)),
+        );
+      });
+    }
   }
 
   void _handleIncoming(String token) {
@@ -101,7 +112,6 @@ class _DuellAppState extends State<DuellApp> {
         scrolledUnderElevation: 0,
       ),
     );
-    final token = widget.initialToken;
     return MaterialApp(
       title: 'Duell',
       debugShowCheckedModeBanner: false,
@@ -109,9 +119,9 @@ class _DuellAppState extends State<DuellApp> {
       themeMode: ThemeMode.dark,
       // JetBrains Mono is a variable font; nudge the default weight heavier.
       darkTheme: base.copyWith(textTheme: _heavier(base.textTheme)),
-      home: (token != null && token.isNotEmpty)
-          ? InboundLauncher(token: token)
-          : const HomeScreen(),
+      // The home screen is always the root; an inbound link is pushed on top
+      // (see initState) so the game has a back button to the menu.
+      home: const HomeScreen(),
     );
   }
 
