@@ -65,6 +65,7 @@ class _BoardViewState extends State<BoardView>
                 // Computed once per rebuild, not per cell.
                 final threats = controller.threatenedSquares;
                 final threatSource = controller.threatSource;
+                final preview = controller.isPreviewSelection;
                 return Stack(
                   children: [
                     Column(
@@ -84,6 +85,7 @@ class _BoardViewState extends State<BoardView>
                                           .contains(Position(col, row)),
                                       isThreatSource: threatSource ==
                                           Position(col, row),
+                                      preview: preview,
                                     ),
                                   ),
                               ],
@@ -244,6 +246,7 @@ class _Cell extends StatelessWidget {
     required this.pulse,
     required this.threatened,
     required this.isThreatSource,
+    required this.preview,
   });
 
   final GameController controller;
@@ -252,6 +255,9 @@ class _Cell extends StatelessWidget {
   final Animation<double> pulse;
   final bool threatened;
   final bool isThreatSource;
+
+  /// A selection exists but it's not your turn — render it greyed.
+  final bool preview;
 
   @override
   Widget build(BuildContext context) {
@@ -287,8 +293,12 @@ class _Cell extends StatelessWidget {
             if (isSelected)
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.yellow.withValues(alpha: 0.35),
-                  border: Border.all(color: Colors.yellow.shade700, width: 3),
+                  color: (preview ? Colors.grey : Colors.yellow)
+                      .withValues(alpha: preview ? 0.22 : 0.35),
+                  border: Border.all(
+                    color: preview ? Colors.grey.shade500 : Colors.yellow.shade700,
+                    width: 3,
+                  ),
                 ),
               ),
             if (piece != null)
@@ -310,7 +320,7 @@ class _Cell extends StatelessWidget {
             if (isDestination)
               _DestIndicator(
                 moves: movesHere,
-                color: teamColor,
+                color: preview ? Colors.grey.shade500 : teamColor,
                 isPreview: isPreview,
                 pulse: pulse,
               ),

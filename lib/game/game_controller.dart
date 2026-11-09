@@ -255,14 +255,21 @@ class GameController extends ChangeNotifier {
         isMyTurn;
   }
 
+  /// A selection exists but it isn't your turn — moves are previewed (greyed)
+  /// and can't be committed.
+  bool get isPreviewSelection => _selected != null && !isMyTurn;
+
   void select(Position p) {
     if (_state.isOver || isAnimating) return;
-    if (!isSelectable(p)) {
+    final piece = _state.pieceAt(p);
+    // Your own pieces are selectable even off-turn (to preview their moves).
+    if (piece == null || piece.owner != _mySide) {
       _clearSelection();
+      notifyListeners();
       return;
     }
     _selected = p;
-    final moves = Rules.reachableMoves(_state, p);
+    final moves = Rules.movesIgnoringTurn(_state, p);
     final byDest = <Position, List<Move>>{};
     for (final m in moves) {
       byDest.putIfAbsent(m.to, () => []).add(m);
@@ -290,8 +297,8 @@ class GameController extends ChangeNotifier {
       return;
     }
 
-    // Committing a move onto a highlighted destination takes priority.
-    if (_selected != null && _movesByDest.containsKey(p)) {
+    // Committing a move onto a highlighted destination — only on your turn.
+    if (isMyTurn && _selected != null && _movesByDest.containsKey(p)) {
       final options = _movesByDest[p]!;
       if (options.length == 1) {
         commit(options.first);
@@ -314,10 +321,19 @@ class GameController extends ChangeNotifier {
       return;
     }
 
-    if (isSelectable(p)) {
+    // Tapping the already-selected die deselects it.
+    if (_selected == p) {
+      _clearSelection();
+      notifyListeners();
+      return;
+    }
+
+    // Select your own die (previews moves greyed when it's not your turn).
+    if (piece != null && piece.owner == _mySide) {
       select(p);
     } else {
       _clearSelection();
+      notifyListeners();
     }
   }
 
